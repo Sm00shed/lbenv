@@ -98,8 +98,8 @@
 
         libjpegTurboPinned = pkgs.libjpeg_turbo;
 
-        # LibImageDecoders requires APNG support
-        libpngPinned = pkgs.libpng.override { apngSupport = true; };
+        # APNG is required by LibImageDecoders and on by default in nixpkgs
+        libpngPinned = pkgs.libpng;
 
         zlibPinned = pkgs.zlib;
 
