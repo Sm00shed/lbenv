@@ -6523,26 +6523,31 @@
   "2026-08-01_1d75636f": {
     "ladybird": "1d75636f6c9aa3080d5217023a8aabfd67444444",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
   },
   "2026-08-01_92471599": {
     "ladybird": "924715998560f6aaffdad63194bf1ece5559a640",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
   },
   "2026-08-01_3ea0c43c": {
     "ladybird": "3ea0c43cbc453e6499d7ce9c6b9544126c2d02e2",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
   },
   "2026-08-01_f9126d3e": {
     "ladybird": "f9126d3ea452b555c5bfc5fd78cc6704762c1a83",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
   },
   "2026-08-01_32441513": {
     "ladybird": "3244151341a040a61e6259bfcd1905ae994e029a",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
   }
 }
