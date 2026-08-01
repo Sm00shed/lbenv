@@ -6518,7 +6518,7 @@
     "ladybird": "9d060f05dd65fac9625621f4967e25a2c364bb93",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "e3c71916873c31d56f8b0f3a0f44698f1c8d3806"
+    "flake": "3dab7eb2bc16cd2ebf7b4402d1984dc25be0d00f"
   },
   "2026-08-01_1d75636f": {
     "ladybird": "1d75636f6c9aa3080d5217023a8aabfd67444444",

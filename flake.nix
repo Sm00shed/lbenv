@@ -206,7 +206,19 @@
             fi
           }
 
+          # --override-input clears self.rev, so pass the intended flake rev
+          # into the shell for the banner (banner falls back to self.rev).
+          flake_rev() {
+            if [ "$LOCAL" = 1 ]; then
+              git -C "$FLAKE_DIR" rev-parse HEAD 2>/dev/null || true
+            else
+              curl -fsSL "https://api.github.com/repos/$FLAKE_REPO/commits/HEAD" \
+                | jq -r '.sha // empty' 2>/dev/null || true
+            fi
+          }
+
           override() {
+            export LBENV_FLAKE_REV="$(flake_rev)"
             exec nix develop "$FLAKE_REF" \
               --override-input ladybird "github:$REPO/$1"
           }
@@ -242,12 +254,14 @@
               if [ -n "$FLAKE_REV" ]; then
                 # full freeze: pin the flake rev too, only override the source
                 echo "using ladybird ''${LADYBIRD_HASH:0:8} + flake ''${FLAKE_REV:0:8} (frozen)"
+                export LBENV_FLAKE_REV="$FLAKE_REV"
                 exec nix develop "github:$FLAKE_REPO/$FLAKE_REV" \
                   --override-input ladybird "github:$REPO/$LADYBIRD_HASH"
               else
                 # no flake rev recorded: not a full freeze
                 echo "warning: no flake rev recorded for $key — not a full freeze" >&2
                 echo "using ladybird ''${LADYBIRD_HASH:0:8} + nixpkgs ''${NIXPKGS_REV:0:8}"
+                export LBENV_FLAKE_REV="$(flake_rev)"
                 exec nix develop "$FLAKE_REF" \
                   --override-input ladybird "github:$REPO/$LADYBIRD_HASH" \
                   --override-input nixpkgs  "github:NixOS/nixpkgs/$NIXPKGS_REV"
@@ -390,9 +404,11 @@
             echo "   Source:  ${builtins.substring 0 8 ladybirdRev} (${builtins.head (pkgs.lib.splitString "_" ladybirdDate)})"
             echo "   nixpkgs: ${builtins.substring 0 8 nixpkgsSrc.rev}"
             echo "   vcpkg:   ${ladybirdVcpkg}"
-            echo "   flake:   ${builtins.substring 0 8 (self.rev or self.dirtyRev or "unknown")}"
+            _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
+            [ -n "$_flakeRev" ] || _flakeRev="unknown"
+            echo "   flake:   ''${_flakeRev:0:8}"
             echo ""
-            echo "   Reproduce: nix develop github:Sm00shed/lbenv/${self.rev or self.dirtyRev or "unknown"}"
+            echo "   Reproduce: nix develop github:Sm00shed/lbenv/$_flakeRev"
             echo ""
             echo "   lbenv new | lbenv use <key|hash> | lbenv list"
             echo ""
