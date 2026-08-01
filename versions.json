@@ -6561,5 +6561,55 @@
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "flake": "4cb89d19aef3eed59f662868611a8ff8adbdcf4d"
+  },
+  "2026-08-01_1ef62a3a": {
+    "ladybird": "1ef62a3a31156d06ea45eada92953680dfb7a6de",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_23d38a1b": {
+    "ladybird": "23d38a1b3a6400544f8eb5b84e8b179156ff44d2",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_06ca2873": {
+    "ladybird": "06ca28737122f307a3cc23d3662b5258681217f2",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_d80752dd": {
+    "ladybird": "d80752dde37cae3117b5f9dd64d3778aa299880c",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_8fc1aaf6": {
+    "ladybird": "8fc1aaf60cdb243afc41a19bc1730eb8733538b2",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_cd2bd729": {
+    "ladybird": "cd2bd729940e5e9ceca54899a522db7b24a89d5e",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_4d5c75d0": {
+    "ladybird": "4d5c75d00d095819f915fecb0a899a858e3fe75a",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_e050d32a": {
+    "ladybird": "e050d32a3c66594bcbe5d23e6d47a40dd6237a8c",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_a787cd7b": {
+    "ladybird": "a787cd7b15d72424aa47c7faee1500e0cddc8529",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_5aa06452": {
+    "ladybird": "5aa0645275af923e4f726e2ed7df02b17efa95d3",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
   }
 }
