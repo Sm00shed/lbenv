@@ -6553,11 +6553,13 @@
   "2026-08-01_0189451e": {
     "ladybird": "0189451edbd30cc9c32289aebd376b2ef2af0d8e",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "4cb89d19aef3eed59f662868611a8ff8adbdcf4d"
   },
   "2026-08-01_be8b47e7": {
     "ladybird": "be8b47e73c4e84b97fd95f72d32f646e9aabfd8b",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
-    "vcpkg": "1bfb778f"
+    "vcpkg": "1bfb778f",
+    "flake": "4cb89d19aef3eed59f662868611a8ff8adbdcf4d"
   }
 }
