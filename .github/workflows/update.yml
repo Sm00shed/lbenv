@@ -47,7 +47,12 @@ jobs:
               if (++pages > MAX_PAGES) break;
               for (const c of page.data) {
                 if (last && c.sha === last.ladybird) { found = true; break outer; }
-                fresh.push({ sha: c.sha, date: c.commit.committer.date.slice(0, 10) });
+                fresh.push({
+                  sha: c.sha,
+                  date: c.commit.committer.date.slice(0, 10),   // YYYY-MM-DD (UTC)
+                  time: c.commit.committer.date.slice(11, 16),  // HH:MM (UTC)
+                  title: c.commit.message.split('\n')[0].slice(0, 100),
+                });
                 if (!last) break outer; // seed: only newest commit
               }
             }
@@ -86,6 +91,8 @@ jobs:
                 ladybird: c.sha,
                 nixpkgs,
                 vcpkg: hash(o),
+                time: c.time,
+                title: c.title,
                 // flake set in commit 2 (hash only known after commit 1 is pushed)
               };
             }
