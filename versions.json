@@ -6549,5 +6549,15 @@
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549"
+  },
+  "2026-08-01_0189451e": {
+    "ladybird": "0189451edbd30cc9c32289aebd376b2ef2af0d8e",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_be8b47e7": {
+    "ladybird": "be8b47e73c4e84b97fd95f72d32f646e9aabfd8b",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
   }
 }
