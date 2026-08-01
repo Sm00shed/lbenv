@@ -2,8 +2,12 @@ name: Update Ladybird versions
 
 on:
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: update-versions
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -23,6 +27,7 @@ jobs:
             const fs = require('fs');
             const crypto = require('crypto');
             const REPO = { owner: 'LadybirdBrowser', repo: 'ladybird' };
+            const MAX_PAGES = 3; // cap: abort if last commit not found within 300
 
             const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
             const nixpkgs = JSON.parse(fs.readFileSync('flake.lock', 'utf8'))
@@ -31,19 +36,28 @@ jobs:
             const recorded = Object.values(versions);
             const last = recorded.at(-1) ?? null;
 
-            // Collect commits newer than the last recorded one. The list
-            // response already carries the commit date, so no extra call per
-            // commit is needed for it.
+            // Collect commits newer than last recorded; date is in list response (no extra call).
             const fresh = [];
+            let pages = 0;
+            let found = !last; // first run: no last → seed only newest
             outer:
             for await (const page of github.paginate.iterator(
               github.rest.repos.listCommits, { ...REPO, per_page: 100 },
             )) {
+              if (++pages > MAX_PAGES) break;
               for (const c of page.data) {
-                if (last && c.sha === last.ladybird) break outer;
+                if (last && c.sha === last.ladybird) { found = true; break outer; }
                 fresh.push({ sha: c.sha, date: c.commit.committer.date.slice(0, 10) });
-                if (!last) break outer;   // first run: seed with newest only
+                if (!last) break outer; // seed: only newest commit
               }
+            }
+            if (!found) {
+              // last.ladybird not in newest 300 commits → force-push or stale versions.json
+              core.setFailed(
+                `Last recorded commit ${last.ladybird} not found in newest `
+                + `${MAX_PAGES * 100} commits; aborting.`,
+              );
+              return;
             }
             fresh.reverse();
 
@@ -52,8 +66,7 @@ jobs:
               return;
             }
 
-            // Hash the normalised overrides rather than the raw file, so that
-            // reformatting upstream does not register as a pin change.
+            // Hash normalised overrides (ignores reformatting upstream).
             const overridesAt = async (ref) => {
               const f = await github.rest.repos.getContent(
                 { ...REPO, path: 'vcpkg.json', ref },
@@ -73,18 +86,13 @@ jobs:
                 ladybird: c.sha,
                 nixpkgs,
                 vcpkg: hash(o),
-                // Flake revision the workflow runs on: it carries the overrides
-                // and flake.lock (nixpkgs -> whole toolchain) valid at this point,
-                // so `lb use` can freeze the complete environment, not just source.
-                flake: context.sha,
+                // flake set in commit 2 (hash only known after commit 1 is pushed)
               };
             }
             fs.writeFileSync('versions.json', JSON.stringify(versions, null, 2) + '\n');
             core.info(`Added ${fresh.length} commits`);
 
-            // Drift is a change against the previously recorded entry. Only
-            // then is the old side fetched, so the diff costs one extra call
-            // and only when something actually moved.
+            // Drift check: fetch prev overrides only if vcpkg hash changed.
             if (!last?.vcpkg || last.vcpkg === hash(latestOverrides)) return;
 
             const prev = await overridesAt(last.ladybird);
@@ -114,6 +122,7 @@ jobs:
 
       - name: Commit and push
         run: |
+          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add versions.json
@@ -121,7 +130,20 @@ jobs:
             echo "No changes"
             exit 0
           fi
-          COUNT=$(git diff --cached versions.json | grep -c '"ladybird"' || true)
+          COUNT=$(git diff --cached versions.json | grep -c '^+.*"ladybird"' || true)
+
+          # Commit 1: entries without flake (hash unknown until after push)
           git commit -m "versions: add $COUNT new Ladybird commits ($(date -u +%F))"
+          git pull --rebase --autostash
+          git push
+          FLAKE_REV=$(git rev-parse HEAD)
+
+          # Commit 2: backfill flake rev into all entries still missing it
+          jq --arg rev "$FLAKE_REV" \
+            'with_entries(if .value.flake == null then .value.flake = $rev else . end)' \
+            versions.json > versions.tmp && mv versions.tmp versions.json
+
+          git add versions.json
+          git commit -m "versions: record flake rev ${FLAKE_REV:0:8}"
           git pull --rebase --autostash
           git push
