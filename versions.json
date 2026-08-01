@@ -6621,5 +6621,25 @@
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb"
+  },
+  "2026-08-01_5f00b401": {
+    "ladybird": "5f00b401092f804657634645882e1ab130613c17",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_63d7b114": {
+    "ladybird": "63d7b114a2a9174af002a537d7923c45aaf43891",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_8009e2ac": {
+    "ladybird": "8009e2ac7e23c09f1d5f50d0fc760919968c2a67",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
+  },
+  "2026-08-01_209d206d": {
+    "ladybird": "209d206dfa26b20723281c647c689a5998e95b56",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f"
   }
 }
