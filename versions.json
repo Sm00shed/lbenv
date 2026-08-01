@@ -5428,5 +5428,11 @@
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "flake": "f91addb9cece1067d9585d6ac048c1b3689541e9"
+  },
+  "2026-08-01_9d060f05": {
+    "ladybird": "9d060f05dd65fac9625621f4967e25a2c364bb93",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "flake": "62426e121baf77cc9051555d4717048d69f999d4"
   }
 }
