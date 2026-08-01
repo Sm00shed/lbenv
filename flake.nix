@@ -148,7 +148,7 @@
           fmt simdutf simdjson libtommath130 libpsl libedit cpptrace
         ] ++ pkgs.lib.optionals isLinux (with pkgs; [
           libdrm vulkan-loader vulkan-memory-allocator
-          libGL libpulseaudio qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtwayland
+          libGL libpulseaudio qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
         ]);
 
@@ -164,7 +164,7 @@
           ++ pkgs.lib.optionals isLinux (with pkgs; [
           vulkan-loader.dev vulkan-headers vulkan-memory-allocator
           libpulseaudio.dev libGL.dev
-          qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtwayland
+          qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
         ]);
 
         cmakePrefixPath = pkgs.lib.concatStringsSep ":" (map toString cmakePrefixParts);
@@ -294,7 +294,7 @@
               # use_linker.cmake passes -fuse-ld=lld on Linux
               llvm.lld
               libdrm.dev vulkan-headers vulkan-loader.dev glslang
-              libGL.dev libpulseaudio.dev qt6Packages.qtmultimedia qt6Packages.qtwayland
+              libGL.dev libpulseaudio.dev qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
             ]);
 
           # SDK 15 as buildInputs (target role) so only Ladybird itself compiles
