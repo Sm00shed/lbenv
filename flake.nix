@@ -98,8 +98,8 @@
 
         libjpegTurboPinned = pkgs.libjpeg_turbo;
 
-        # nixpkgs' APNG patch is incompatible, keep it off.
-        libpngPinned = pkgs.libpng.override { apngSupport = false; };
+        # LibImageDecoders requires APNG support
+        libpngPinned = pkgs.libpng.override { apngSupport = true; };
 
         zlibPinned = pkgs.zlib;
 
