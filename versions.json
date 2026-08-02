@@ -8698,7 +8698,7 @@
     "ladybird": "1d75636f6c9aa3080d5217023a8aabfd67444444",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549",
+    "flake": "3ff1553f8597dcdcca9ed9ab995952513d307b0a",
     "time": "13:59",
     "title": "LibWebView: Consolidate canonical session history entry updates"
   },
@@ -8706,7 +8706,7 @@
     "ladybird": "924715998560f6aaffdad63194bf1ece5559a640",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549",
+    "flake": "3ff1553f8597dcdcca9ed9ab995952513d307b0a",
     "time": "13:59",
     "title": "LibWeb: Assign document state cross-process ids at creation"
   },
@@ -8714,7 +8714,7 @@
     "ladybird": "3ea0c43cbc453e6499d7ce9c6b9544126c2d02e2",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549",
+    "flake": "3ff1553f8597dcdcca9ed9ab995952513d307b0a",
     "time": "13:59",
     "title": "LibWeb+LibWebView: Report session history entry state changes"
   },
@@ -8722,7 +8722,7 @@
     "ladybird": "f9126d3ea452b555c5bfc5fd78cc6704762c1a83",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549",
+    "flake": "3ff1553f8597dcdcca9ed9ab995952513d307b0a",
     "time": "13:59",
     "title": "LibWeb+LibWebView: Report nested history mutations"
   },
@@ -8730,7 +8730,7 @@
     "ladybird": "3244151341a040a61e6259bfcd1905ae994e029a",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "ffc7c26b6f0c46acc5fade1060801df12d67b549",
+    "flake": "3ff1553f8597dcdcca9ed9ab995952513d307b0a",
     "time": "13:59",
     "title": "LibWebView: Clear reload pending for all matching document states"
   },
@@ -8738,7 +8738,7 @@
     "ladybird": "0189451edbd30cc9c32289aebd376b2ef2af0d8e",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "4cb89d19aef3eed59f662868611a8ff8adbdcf4d",
+    "flake": "5ce2a335e5cfc8ad768ce17f3a3ed4b9672134a5",
     "time": "17:34",
     "title": "LibWeb: Derive SVG element type facts from NodeKind"
   },
@@ -8746,7 +8746,7 @@
     "ladybird": "be8b47e73c4e84b97fd95f72d32f646e9aabfd8b",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "4cb89d19aef3eed59f662868611a8ff8adbdcf4d",
+    "flake": "5ce2a335e5cfc8ad768ce17f3a3ed4b9672134a5",
     "time": "17:34",
     "title": "LibWeb: Store computed grid style as a Rust-native style group payload"
   },
@@ -8754,7 +8754,7 @@
     "ladybird": "1ef62a3a31156d06ea45eada92953680dfb7a6de",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Add lazy length-percentage views over computed style payloads"
   },
@@ -8762,7 +8762,7 @@
     "ladybird": "23d38a1b3a6400544f8eb5b84e8b179156ff44d2",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Read sizing properties straight from the style group payloads"
   },
@@ -8770,7 +8770,7 @@
     "ladybird": "06ca28737122f307a3cc23d3662b5258681217f2",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Read margins and paddings straight from the surround payload"
   },
@@ -8778,7 +8778,7 @@
     "ladybird": "d80752dde37cae3117b5f9dd64d3778aa299880c",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Model inset reads as a typed value instead of a decoded struct"
   },
@@ -8786,7 +8786,7 @@
     "ladybird": "8fc1aaf60cdb243afc41a19bc1730eb8733538b2",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Read gaps, SVG geometry and offsets through payload views"
   },
@@ -8794,7 +8794,7 @@
     "ladybird": "cd2bd729940e5e9ceca54899a522db7b24a89d5e",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Carry grid track sizes as payload references, drop FfiSizeValue"
   },
@@ -8802,7 +8802,7 @@
     "ladybird": "4d5c75d00d095819f915fecb0a899a858e3fe75a",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Drop the migration allowance from the computed value views"
   },
@@ -8810,7 +8810,7 @@
     "ladybird": "e050d32a3c66594bcbe5d23e6d47a40dd6237a8c",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Fold StyleReader into StyleValues"
   },
@@ -8818,7 +8818,7 @@
     "ladybird": "a787cd7b15d72424aa47c7faee1500e0cddc8529",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Move the computed style accessor surface into the css module"
   },
@@ -8826,7 +8826,7 @@
     "ladybird": "5aa0645275af923e4f726e2ed7df02b17efa95d3",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "b0ac48943e44d97169cf17c477a45bf160b8b0fb",
+    "flake": "15ecab5170f9afceba385483e154b8e9b0deb4fc",
     "time": "21:31",
     "title": "LibWeb: Generate the plain payload projections through accessor macros"
   },
@@ -8834,7 +8834,7 @@
     "ladybird": "5f00b401092f804657634645882e1ab130613c17",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "42cf3b7f70d3cbed3caa08ad31ca46ebbe3a7cf0",
+    "flake": "50ed3c992c04d4b31cc41cc270b6a240ab7af10a",
     "time": "23:18",
     "title": "LibWeb: Preserve whitespace in text input inner editors"
   },
@@ -8842,7 +8842,7 @@
     "ladybird": "63d7b114a2a9174af002a537d7923c45aaf43891",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "42cf3b7f70d3cbed3caa08ad31ca46ebbe3a7cf0",
+    "flake": "50ed3c992c04d4b31cc41cc270b6a240ab7af10a",
     "time": "23:18",
     "title": "LibWeb: Drop the caret-position dependency from line layout"
   },
@@ -8850,7 +8850,7 @@
     "ladybird": "8009e2ac7e23c09f1d5f50d0fc760919968c2a67",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "42cf3b7f70d3cbed3caa08ad31ca46ebbe3a7cf0",
+    "flake": "50ed3c992c04d4b31cc41cc270b6a240ab7af10a",
     "time": "23:18",
     "title": "LibWeb: Stamp the empty-text fragment behavior as a layout node flag"
   },
@@ -8858,7 +8858,7 @@
     "ladybird": "209d206dfa26b20723281c647c689a5998e95b56",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
-    "flake": "42cf3b7f70d3cbed3caa08ad31ca46ebbe3a7cf0",
+    "flake": "50ed3c992c04d4b31cc41cc270b6a240ab7af10a",
     "time": "23:18",
     "title": "LibWeb: Relayout when an editability flip changes stamped layout facts"
   }
