@@ -1,4 +1,4 @@
-# Ladybird Nix development environment
+# Reproducible Nix build environment for the Ladybird browser
 
 A Nix flake that provides a `nix develop` shell for building the
 [Ladybird](https://github.com/LadybirdBrowser/ladybird) browser. The shell
