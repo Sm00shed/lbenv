@@ -224,7 +224,7 @@
           case "''${1:-}" in
             "")
               # newest recorded
-              entry=$(versions | jq -rc 'to_entries | sort_by(.key) | last | .value')
+              entry=$(versions | jq -rc 'to_entries | last | .value')
               [ -n "$entry" ] && [ "$entry" != "null" ] \
                 || { echo "versions.json has no entries" >&2; exit 1; }
               freeze_entry "$entry"
@@ -247,7 +247,7 @@
               if [ -z "$key" ]; then
                 if command -v fzf >/dev/null 2>&1; then
                   key=$(printf '%s' "$v" | jq -j --arg cur "''${LADYBIRD_REV:-}" '
-                      to_entries | sort_by(.key) | reverse | .[]
+                      to_entries | reverse | .[]
                       | (if .value.ladybird == $cur then "* " else "  " end)
                         + (.value.title // "(no title)") + "\n"
                       + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
@@ -257,7 +257,7 @@
                   [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
                 else
                   printf '%s' "$v" | jq -r --arg cur "''${LADYBIRD_REV:-}" '
-                      to_entries | sort_by(.key) | reverse | .[]
+                      to_entries | reverse | .[]
                       | (if .value.ladybird == $cur then "* " else "  " end)
                         + (.value.title // "(no title)") + "\n"
                       + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
