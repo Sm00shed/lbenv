@@ -15,16 +15,11 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ladybird }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
-        isDarwin = builtins.match ".*-darwin" system != null;
-        isLinux  = builtins.match ".*-linux"  system != null;
-
         pkgs = import nixpkgs {
           inherit system;
-          config = {
-            allowDeprecatedx86_64Darwin = true;
-          };
+          config = { };
           overlays = [ ];
         };
 
@@ -39,16 +34,6 @@
             hash  = "sha256-z9qMOTcGkURblZChXDGfQ58hrql52lG6EE1NQmxxuj0=";
           };
           patches = [];
-        });
-
-        # Apple Clang lacks __STDC_IEC_559__, which compiles mp_set_double out.
-        libtommath130 = pkgs.libtommath.overrideAttrs (prev: {
-          postPatch = (prev.postPatch or "") + ''
-            substituteInPlace bn_mp_set_double.c \
-              --replace-fail \
-                '#if defined(__STDC_IEC_559__) || defined(__GCC_IEC_559)' \
-                '#if 1 /* forced: x86_64 is IEEE754 compliant */'
-          '';
         });
 
         wuffsSinglefile = pkgs.stdenv.mkDerivation {
@@ -125,32 +110,18 @@
 
         freetypePinned = pkgs.freetype;
 
-        # Clang 21 ICEs on vk_helpers.h, build angle with Clang 20 on Linux.
-        ladybirdAngleBase = if isLinux
-          then pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; }
-          else pkgs.angle;
-        # Drop the extra libGLESv2 build variants from angle.pc; each carries its
-        # own ANGLESwapCGLLayer copy and objc warns about the duplicate class.
-        ladybirdAngle = if isDarwin
-          then ladybirdAngleBase.overrideAttrs (prev: {
-            postFixup = (prev.postFixup or "") + ''
-              substituteInPlace "$out/lib/pkgconfig/angle.pc" \
-                --replace-fail " -lGLESv2_with_capture" "" \
-                --replace-fail " -lGLESv2_vulkan_secondaries" ""
-            '';
-          })
-          else ladybirdAngleBase;
+        # Clang 21 ICEs on vk_helpers.h, build angle with Clang 20.
+        ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
 
         libPkgs = with pkgs; [
           curlFull ffmpegPinned.lib fontconfig.lib libavif ladybirdAngle libjxl libwebp libxcrypt
           opensslPinned sdl3 brotli.lib libhwy lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmt simdutf simdjson libtommath130 libpsl libedit cpptrace
-        ] ++ pkgs.lib.optionals isLinux (with pkgs; [
+          fmt simdutf simdjson libtommath libpsl libedit cpptrace
           libdrm vulkan-loader vulkan-memory-allocator
           libGL libpulseaudio qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
-        ]);
+        ];
 
         cmakePrefixParts = with pkgs; [
           icu78.dev harfbuzzPinned.dev opensslPinned.dev curlFull.dev sdl3.dev fmt.dev
@@ -160,12 +131,11 @@
           mimalloc227.dev
           # enables AK_HAS_CPPTRACE (symbolized stacktraces)
           cpptrace
-        ] ++ [ libtommath130 ]
-          ++ pkgs.lib.optionals isLinux (with pkgs; [
+          libtommath
           vulkan-loader.dev vulkan-headers vulkan-memory-allocator
           libpulseaudio.dev libGL.dev
           qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
-        ]);
+        ];
 
         cmakePrefixPath = pkgs.lib.concatStringsSep ":" (map toString cmakePrefixParts);
 
@@ -350,9 +320,7 @@ LIST
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvm.clang llvm.lld ]
-            ++ [ lbenv ]
-            ++ [ libtommath130 ]
+            ++ [ llvm.clang llvm.lld lbenv pkgs.libtommath ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlFull.dev fast-float ffmpegPinned.dev fmt fmt.dev fontconfig.dev
@@ -362,21 +330,10 @@ LIST
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
               dejavu_fonts liberation_ttf cacert
-            ])
-            ++ pkgs.lib.optionals isLinux (with pkgs; [
-              patchelf
-              # use_linker.cmake passes -fuse-ld=lld on Linux
-              llvm.lld
-              libdrm.dev vulkan-headers vulkan-loader.dev glslang
+              patchelf glslang
+              libdrm.dev vulkan-headers vulkan-loader.dev
               libGL.dev libpulseaudio.dev qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
             ]);
-
-          # SDK 15 as buildInputs (target role) so only Ladybird itself compiles
-          # against it; strchrnul needs deployment target 15.4.
-          buildInputs = pkgs.lib.optionals isDarwin [
-            pkgs.apple-sdk_15
-            (pkgs.darwinMinVersionHook "15.4")
-          ];
 
           shellHook = ''
             export LADYBIRD_REV=${ladybirdRev}
@@ -386,8 +343,6 @@ LIST
             export CMAKE_PREFIX_PATH="${cmakePrefixPath}''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
             export ICU_ROOT=${pkgs.icu78.dev}
             export PKG_CONFIG_PATH="${ladybirdSkia}/lib/pkgconfig:${ladybirdAngle}/lib/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-            # VSyncScheduler.cpp deprecation, reported upstream (#10657)
-            export CXXFLAGS="-Wno-deprecated-declarations''${CXXFLAGS:+ $CXXFLAGS}"
             # point the fontconfig include at the version-matched nix conf.d
             export FONTCONFIG_FILE=${pkgs.runCommand "ladybird-fonts.conf" { } ''
               substitute ${pkgs.makeFontsConf { fontDirectories = with pkgs; [ dejavu_fonts liberation_ttf ]; }} $out \
@@ -395,49 +350,41 @@ LIST
             ''}
             export CLANGD_PATH=${llvm.clang-unwrapped}/bin/clangd
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+            # keep the working clone on the flake-pinned rev: the banner shows
+            # LADYBIRD_REV, so the checkout must match or you silently build the
+            # old source. only touch a clean tree; patches run after this.
+            if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
+              _cur=$(git -C "$PWD" rev-parse HEAD 2>/dev/null || true)
+              if [ -n "''${LADYBIRD_REV:-}" ] && [ "$_cur" != "$LADYBIRD_REV" ]; then
+                if [ -z "$(git -C "$PWD" status --porcelain)" ]; then
+                  echo "lbenv: sync source ''${_cur:0:8} → ''${LADYBIRD_REV:0:8}"
+                  git -C "$PWD" fetch --quiet origin "$LADYBIRD_REV" 2>/dev/null \
+                    || git -C "$PWD" fetch --quiet origin || true
+                  git -C "$PWD" checkout --quiet --detach "$LADYBIRD_REV"
+                else
+                  echo "lbenv: tree dirty — building ''${_cur:0:8}, NOT pinned ''${LADYBIRD_REV:0:8}" >&2
+                  echo "       commit/stash, then: git -C \"$PWD\" checkout $LADYBIRD_REV" >&2
+                fi
+              fi
+              unset _cur
+            fi
             # Landlock blocks direct store paths for RequestServer, copy the cert
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
               cp --no-preserve=mode ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
                  "$PWD/Caches/CACERT/ca-bundle.crt"
             fi
-            # apply tracked source patches (see patches/), skip if already applied
-            if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
-              PATCHES_DIR="${toString ./patches}"
-              for p in "$PATCHES_DIR"/*.patch; do
-                [ -f "$p" ] || continue
-                if git -C "$PWD" apply --check "$p" 2>/dev/null; then
-                  git -C "$PWD" apply "$p"
-                  echo "applied: $(basename $p)"
-                fi
-              done
-            fi
             LADYBIRD_SRC_DIR="$PWD"
             export LADYBIRD_CERTIFICATE="''${LADYBIRD_CERTIFICATE:-$PWD/Caches/CACERT/ca-bundle.crt}"
             unset VCPKG_ROOT
             unset CMAKE_TOOLCHAIN_FILE
 
-            ${if isDarwin then ''
-              # strchrnul is API_AVAILABLE(15.4)
-              export MACOSX_DEPLOYMENT_TARGET="15.4"
-              export SDKROOT="${pkgs.apple-sdk_15.sdkroot}"
-              export LIBRARY_PATH="${pkgs.fontconfig.lib}/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
-              # x86_64 ld64 does not ad-hoc sign, the codesign step fails without
-              # this; must go via LDFLAGS (cmake ignores CMAKE_*_LINKER_FLAGS env)
-              export LDFLAGS="-framework CoreText -framework CoreFoundation -framework CoreGraphics -Wl,-adhoc_codesign''${LDFLAGS:+ $LDFLAGS}"
-              export NIX_LDFLAGS="-framework CoreText -framework CoreFoundation -framework CoreGraphics''${NIX_LDFLAGS:+ $NIX_LDFLAGS}"
-              # fallback path, not DYLD_LIBRARY_PATH: system libpng must keep
-              # priority for Apple tools (iconutil/ImageIO crash otherwise)
-              export DYLD_FALLBACK_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
-              Ladybird() { "$LADYBIRD_SRC_DIR/Build/release/bin/Ladybird.app/Contents/MacOS/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
-            '' else ''
-              export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-              export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
-              export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
-              Ladybird() { "$LADYBIRD_SRC_DIR/Build/release/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
-            ''}
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
+            export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
+            Ladybird() { "$LADYBIRD_SRC_DIR/Build/release/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
 
-            ${if isLinux then "ulimit -s unlimited" else "ulimit -s hard"}
+            ulimit -s unlimited
             export RUST_MIN_STACK=16777216
 
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
