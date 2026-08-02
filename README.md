@@ -57,10 +57,12 @@ Then enter the shell (this opens an interactive subshell):
 nix develop github:Sm00shed/lbenv
 ```
 
-The shell prints its banner and is ready. Configure the build with CMake:
+Select a version with `lbenv` (nothing builds until you do). The shell then
+exports `LADYBIRD_BUILD_DIR` — a separate build directory per version, so
+switching never mixes builds. Configure:
 
 ```bash
-cmake -B Build/release -GNinja \
+cmake -B "$LADYBIRD_BUILD_DIR" -GNinja \
   -DCMAKE_BUILD_TYPE=Release \
   -DENABLE_LTO_FOR_RELEASE=OFF \
   -DICU_ROOT="$ICU_ROOT" \
@@ -71,7 +73,7 @@ cmake -B Build/release -GNinja \
 Compile:
 
 ```bash
-ninja -j$(nproc) -C Build/release
+ninja -j$(nproc) -C "$LADYBIRD_BUILD_DIR"
 ```
 
 ## Build configuration
@@ -103,8 +105,9 @@ After the build, launch the browser from the shell:
 Ladybird
 ```
 
-`Ladybird` is a shell function that runs `Build/release/bin/Ladybird` and passes
-the CA certificate automatically. Override it with an environment variable:
+`Ladybird` is a shell function that runs the browser from the selected version's
+`$LADYBIRD_BUILD_DIR` and passes the CA certificate automatically. Override it
+with an environment variable:
 
 ```bash
 LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird

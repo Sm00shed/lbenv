@@ -356,16 +356,25 @@
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
-            Ladybird() { "$LADYBIRD_SRC_DIR/Build/release/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
+            # per-rev build dir, no mixing between versions
+            export LADYBIRD_BUILD_DIR="Build/''${LADYBIRD_REV:0:12}"
+            Ladybird() { "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
 
-            # no selection: block builds until a version is chosen
+            # build only when selection == checked-out source == build dir
+            _build_ok=1; _why=""
             if [ "$_sel" != 1 ]; then
-              _lb_guard() { echo "no Ladybird version selected — run 'lbenv' or 'lbenv switch <key>'" >&2; return 1; }
-              cmake() { _lb_guard; }
-              ninja() { _lb_guard; }
+              _build_ok=0; _why="no Ladybird version selected — run 'lbenv' or 'lbenv switch <key>'"
+            elif [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
+              [ "$(git -C "$PWD" rev-parse HEAD 2>/dev/null)" = "$LADYBIRD_REV" ] || {
+                _build_ok=0; _why="source not on the selected rev (dirty tree?) — commit/stash and re-enter"
+              }
+            fi
+            if [ "$_build_ok" != 1 ]; then
+              cmake() { echo "$_why" >&2; return 1; }
+              ninja() { echo "$_why" >&2; return 1; }
             fi
 
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
@@ -402,8 +411,10 @@
               _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
               [ -n "$_flakeRev" ] || _flakeRev="unknown"
               echo "     flake    ''${_flakeRev:0:8}"
+              echo "     build    $LADYBIRD_BUILD_DIR"
               echo ""
               echo "   Reproduce: nix develop github:Sm00shed/lbenv/$_flakeRev"
+              echo "   Build:     cmake -B \"\$LADYBIRD_BUILD_DIR\" -GNinja … && ninja -C \"\$LADYBIRD_BUILD_DIR\""
             else
               echo "   no Ladybird version selected"
               echo "     lbenv               newest recorded"
