@@ -44,22 +44,17 @@ After this, `nix develop github:Sm00shed/lbenv` works directly.
 
 ## Quick start
 
-Clone Ladybird, enter the shell, configure, and build:
-
-```bash
-git clone https://github.com/LadybirdBrowser/ladybird.git
-cd ladybird
-```
-
-Then enter the shell (this opens an interactive subshell):
+Enter the shell — it opens an interactive subshell:
 
 ```bash
 nix develop github:Sm00shed/lbenv
 ```
 
-Select a version with `lbenv` (nothing builds until you do). The shell then
-exports `LADYBIRD_BUILD_DIR` — a separate build directory per version, so
-switching never mixes builds. Configure:
+Pick a version with `lbenv` (newest) or `lbenv switch <key|hash>`. That creates a
+git worktree for the chosen Ladybird commit under `~/ladybird-envs/<hash>/`, drops
+you into it, and exports `LADYBIRD_BUILD_DIR` (`Build` inside the worktree). Each
+version is fully isolated — its own source and build, never mixed. Configure and
+build there:
 
 ```bash
 cmake -B "$LADYBIRD_BUILD_DIR" -GNinja \
@@ -119,15 +114,13 @@ Ladybird versions are recorded in `versions.json` (the machine-readable source,
 updated automatically by a CI job every few minutes). The picker, the list and
 the banner are all derived from it.
 
-Until you select a version the shell shows none and blocks the build:
+Until you pick a version the shell shows none:
 
     Ladybird Dev Shell
 
        no Ladybird version selected
          lbenv               newest recorded
          lbenv switch <key>  pick a version
-
-       build blocked until a version is selected
 
 `lbenv`
   Enter the newest recorded version.
@@ -156,6 +149,7 @@ Once selected, the banner shows the commit and the environment:
          nixpkgs  8f0500b9
          vcpkg    1bfb778f
          flake    5e6c3378
+         dir      ~/ladybird-envs/12176d08…
 
        Reproduce: nix develop github:Sm00shed/lbenv/5e6c3378
 
@@ -166,6 +160,12 @@ reference directly:
 ```bash
 nix develop github:Sm00shed/lbenv/<commit-hash>
 ```
+
+Each selected version lives in its own git worktree under
+`~/ladybird-envs/<ladybird-hash>/`, its build in `Build/` inside. Switching never
+touches another version; jump back to a built one and it is ready instantly. The
+worktrees share one clone (`~/ladybird`) for git objects. Set `LADYBIRD_SRC` /
+`LADYBIRD_ENVS` to relocate the clone or the worktree root.
 
 `lbenv` reads `versions.json` from a local clone of this flake next to the
 Ladybird source when present:

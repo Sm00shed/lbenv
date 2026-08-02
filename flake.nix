@@ -139,26 +139,6 @@
 
         nixpkgsSrc = nixpkgs;
 
-        versions    = builtins.fromJSON (builtins.readFile ./versions.json);
-        ladybirdRev = ladybird.rev or "unknown";
-        tracked     = pkgs.lib.filterAttrs (_: v: v.ladybird == ladybirdRev) versions;
-        trackedEntry =
-          if tracked == {} then null
-          else builtins.head (builtins.attrValues tracked);
-        ladybirdDate =
-          if tracked == {} then "untracked"
-          else builtins.head (builtins.attrNames tracked);
-        # recorded vcpkg pin
-        ladybirdVcpkg =
-          if trackedEntry == null then "-"
-          else trackedEntry.vcpkg or "-";
-        ladybirdTitle =
-          if trackedEntry == null then "(not recorded)"
-          else trackedEntry.title or "(no title)";
-        ladybirdWhen =
-          if trackedEntry == null then ""
-          else (builtins.substring 0 10 ladybirdDate)
-            + (if (trackedEntry.time or "") == "" then "" else " " + trackedEntry.time);
 
         # lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]
         lbenv = pkgs.writeShellScriptBin "lbenv" ''
@@ -194,37 +174,56 @@
             fi
           }
 
-          override() {
-            export LBENV_FLAKE_REV="$(flake_rev)"
-            exec nix develop "$FLAKE_REF" \
-              --override-input ladybird "github:$REPO/$1"
+          envs_root() { echo "''${LADYBIRD_ENVS:-$HOME/ladybird-envs}"; }
+          main_src()  { echo "''${LADYBIRD_SRC:-$HOME/ladybird}"; }
+
+          # worktree for a ladybird rev, one dir per hash; prints its path
+          ensure_worktree() {
+            local lh="$1" src dir
+            src=$(main_src); dir="$(envs_root)/$lh"
+            [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
+            if [ ! -e "$dir" ]; then
+              git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
+                || git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
+                || git -C "$src" fetch --quiet origin || true
+              git -C "$src" worktree add --quiet --detach "$dir" "$lh" >&2
+            fi
+            echo "$dir"
           }
 
-          # enter one versions.json entry
+          override() {
+            local dir; dir=$(ensure_worktree "$1")
+            export LBENV_FLAKE_REV="$(flake_rev)"
+            export LBENV_LADYBIRD="$1" LBENV_TITLE="(not recorded)" LBENV_WHEN="" LBENV_VCPKG="-"
+            cd "$dir" || exit 1
+            exec nix develop "$FLAKE_REF" --quiet
+          }
+
+          # enter one versions.json entry, in its worktree
           freeze_entry() {
-            local entry="$1" lh nh fh
+            local entry="$1" lh fh dir
             lh=$(printf '%s' "$entry" | jq -r '.ladybird')
-            nh=$(printf '%s' "$entry" | jq -r '.nixpkgs')
             fh=$(printf '%s' "$entry" | jq -r '.flake // empty')
+            export LBENV_LADYBIRD="$lh"
+            export LBENV_TITLE="$(printf '%s' "$entry" | jq -r '.title // "(no title)"')"
+            export LBENV_VCPKG="$(printf '%s' "$entry" | jq -r '.vcpkg // "-"')"
+            export LBENV_WHEN="$(printf '%s' "$entry" | jq -r '(.date // "") + (if (.time // "") == "" then "" else " " + .time end)')"
+            dir=$(ensure_worktree "$lh")
+            cd "$dir" || exit 1
             if [ -n "$fh" ]; then
-              echo "using ladybird ''${lh:0:8} + flake ''${fh:0:8} (frozen)"
               export LBENV_FLAKE_REV="$fh"
-              exec nix develop "github:$FLAKE_REPO/$fh" \
-                --override-input ladybird "github:$REPO/$lh"
+              exec nix develop "github:$FLAKE_REPO/$fh" --quiet
             else
               echo "warning: no recorded flake rev — floating, not frozen" >&2
-              echo "using ladybird ''${lh:0:8} + nixpkgs ''${nh:0:8}"
               export LBENV_FLAKE_REV="$(flake_rev)"
-              exec nix develop "$FLAKE_REF" \
-                --override-input ladybird "github:$REPO/$lh" \
-                --override-input nixpkgs  "github:NixOS/nixpkgs/$nh"
+              exec nix develop "$FLAKE_REF" --quiet
             fi
           }
 
           case "''${1:-}" in
             "")
               # newest recorded
-              entry=$(versions | jq -rc 'to_entries | last | .value')
+              entry=$(versions | jq -rc 'to_entries | last | (.value + {date: (.key[0:10])})')
               [ -n "$entry" ] && [ "$entry" != "null" ] \
                 || { echo "versions.json has no entries" >&2; exit 1; }
               freeze_entry "$entry"
@@ -246,7 +245,7 @@
               # no arg: fzf block picker, or plain blocks without fzf
               if [ -z "$key" ]; then
                 if command -v fzf >/dev/null 2>&1; then
-                  key=$(printf '%s' "$v" | jq -j --arg cur "''${LADYBIRD_REV:-}" '
+                  key=$(printf '%s' "$v" | jq -j --arg cur "''${LBENV_LADYBIRD:-}" '
                       to_entries | reverse | .[]
                       | (if .value.ladybird == $cur then "* " else "  " end)
                         + (.value.title // "(no title)") + "\n"
@@ -256,7 +255,7 @@
                     | grep -oE '[0-9a-f]{40}' | head -n1 || true)
                   [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
                 else
-                  printf '%s' "$v" | jq -r --arg cur "''${LADYBIRD_REV:-}" '
+                  printf '%s' "$v" | jq -r --arg cur "''${LBENV_LADYBIRD:-}" '
                       to_entries | reverse | .[]
                       | (if .value.ladybird == $cur then "* " else "  " end)
                         + (.value.title // "(no title)") + "\n"
@@ -268,10 +267,10 @@
               fi
 
               # resolve by key or hash
-              entry=$(printf '%s' "$v" | jq -rc --arg k "$key" '.[$k] // empty')
+              entry=$(printf '%s' "$v" | jq -rc --arg k "$key" '.[$k] as $e | if $e then $e + {date: ($k[0:10])} else empty end')
               if [ -z "$entry" ]; then
                 entry=$(printf '%s' "$v" | jq -rc --arg k "$key" \
-                  'to_entries[] | select(.value.ladybird | startswith($k)) | .value' \
+                  'to_entries[] | select(.value.ladybird | startswith($k)) | (.value + {date: (.key[0:10])})' \
                   | head -n1)
               fi
               [ -n "$entry" ] || { echo "not in versions.json: $key" >&2; exit 1; }
@@ -310,7 +309,6 @@
             ]);
 
           shellHook = ''
-            export LADYBIRD_REV=${ladybirdRev}
             export CC=${llvm.clang}/bin/clang
             export CXX=${llvm.clang}/bin/clang++
             export CMAKE_BUILD_TYPE=Release
@@ -326,22 +324,6 @@
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
             _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
 
-            # sync the clone to the selected rev, clean tree only
-            if [ "$_sel" = 1 ] && [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
-              _cur=$(git -C "$PWD" rev-parse HEAD 2>/dev/null || true)
-              if [ -n "''${LADYBIRD_REV:-}" ] && [ "$_cur" != "$LADYBIRD_REV" ]; then
-                if [ -z "$(git -C "$PWD" status --porcelain)" ]; then
-                  echo "lbenv: sync source ''${_cur:0:8} → ''${LADYBIRD_REV:0:8}"
-                  git -C "$PWD" fetch --quiet origin "$LADYBIRD_REV" 2>/dev/null \
-                    || git -C "$PWD" fetch --quiet origin || true
-                  git -C "$PWD" checkout --quiet --detach "$LADYBIRD_REV"
-                else
-                  echo "lbenv: tree dirty — building ''${_cur:0:8}, NOT pinned ''${LADYBIRD_REV:0:8}" >&2
-                  echo "       commit/stash, then: git -C \"$PWD\" checkout $LADYBIRD_REV" >&2
-                fi
-              fi
-              unset _cur
-            fi
             # CA cert into the tree
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
@@ -356,26 +338,12 @@
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
-            # per-rev build dir, no mixing between versions
-            export LADYBIRD_BUILD_DIR="Build/''${LADYBIRD_REV:0:12}"
+            # build dir inside the per-hash worktree
+            export LADYBIRD_BUILD_DIR="Build"
             Ladybird() { "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
-
-            # build only when selection == checked-out source == build dir
-            _build_ok=1; _why=""
-            if [ "$_sel" != 1 ]; then
-              _build_ok=0; _why="no Ladybird version selected — run 'lbenv' or 'lbenv switch <key>'"
-            elif [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
-              [ "$(git -C "$PWD" rev-parse HEAD 2>/dev/null)" = "$LADYBIRD_REV" ] || {
-                _build_ok=0; _why="source not on the selected rev (dirty tree?) — commit/stash and re-enter"
-              }
-            fi
-            if [ "$_build_ok" != 1 ]; then
-              cmake() { echo "$_why" >&2; return 1; }
-              ninja() { echo "$_why" >&2; return 1; }
-            fi
 
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               if [ ! -f "$PWD/Caches/HSTSPreload/transport_security_state_static.json" ]; then
@@ -401,26 +369,24 @@
             echo ""
             if [ "$_sel" = 1 ]; then
               echo "   Commit"
-              echo "     ${ladybirdTitle}"
-              echo "     ${ladybirdWhen}"
-              echo "     ${ladybirdRev}"
+              echo "     ''${LBENV_TITLE:-(not recorded)}"
+              echo "     $LBENV_WHEN"
+              echo "     $LBENV_LADYBIRD"
               echo ""
               echo "   Environment"
               echo "     nixpkgs  ${builtins.substring 0 8 nixpkgsSrc.rev}"
-              echo "     vcpkg    ${ladybirdVcpkg}"
+              echo "     vcpkg    ''${LBENV_VCPKG:--}"
               _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
               [ -n "$_flakeRev" ] || _flakeRev="unknown"
               echo "     flake    ''${_flakeRev:0:8}"
-              echo "     build    $LADYBIRD_BUILD_DIR"
+              echo "     dir      $PWD"
               echo ""
-              echo "   Reproduce: nix develop github:Sm00shed/lbenv/$_flakeRev"
+              echo "   Reproduce: lbenv switch $LBENV_LADYBIRD"
               echo "   Build:     cmake -B \"\$LADYBIRD_BUILD_DIR\" -GNinja … && ninja -C \"\$LADYBIRD_BUILD_DIR\""
             else
               echo "   no Ladybird version selected"
               echo "     lbenv               newest recorded"
               echo "     lbenv switch <key>  pick a version"
-              echo ""
-              echo "   build blocked until a version is selected"
             fi
             echo ""
             echo "   lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]"
