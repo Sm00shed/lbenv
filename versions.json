@@ -8933,5 +8933,89 @@
     "time": "00:10",
     "title": "LibWeb: Handle calculated number `border-image-outset` values",
     "flake": "25e80431f332a1c901a280d0f0c3f0c2fadc7578"
+  },
+  "2026-08-02_eec66415": {
+    "ladybird": "eec664153f920daa9957a74657d5d90e6c9ef463",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Use `undefined` rather than `void` in SVG interface IDL"
+  },
+  "2026-08-02_bea0bb77": {
+    "ladybird": "bea0bb7753508953c97e64613ef4b36e39d6122a",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare the resolution types of `SubtleCrypto` promises"
+  },
+  "2026-08-02_6decadde": {
+    "ladybird": "6decadde1692a1b7821ef4ea93c465362dfb6634",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Change read-only `DOMString` members to `USVString`"
+  },
+  "2026-08-02_a7fe70c3": {
+    "ladybird": "a7fe70c36a13d29b214ca155ccf1c267ee8775fb",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare `HTMLImageElement.srcset` as a `USVString`"
+  },
+  "2026-08-02_1c3f12bf": {
+    "ladybird": "1c3f12bf3e668030059f7c5eb145cece740390c6",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare `IdleDeadline.timeRemaining` as `DOMHighResTimeStamp`"
+  },
+  "2026-08-02_8089986a": {
+    "ladybird": "8089986a59c379ec6b7c65122768dfc28245ea19",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Default nullable event init members to null"
+  },
+  "2026-08-02_d54a6487": {
+    "ladybird": "d54a64876a28af49834de46f4e6db14e18879c4a",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare `CSSFontFaceRule.style` as `CSSFontFaceDescriptors`"
+  },
+  "2026-08-02_d372ca5d": {
+    "ladybird": "d372ca5d63124f535878ab5f108ba5cd435d3470",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare the media capabilities info members as specified"
+  },
+  "2026-08-02_e0869bbd": {
+    "ladybird": "e0869bbd4d73d6066812c9d625ef96d5a92e05f4",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Require `baudRate` when opening a serial port"
+  },
+  "2026-08-02_4b228859": {
+    "ladybird": "4b228859c000b695d8f47cfaf060de3e36c3588b",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Allow the serial port streams to be null"
+  },
+  "2026-08-02_fa6e8e33": {
+    "ladybird": "fa6e8e33d2788fbbdbff16bfdbfc651eb12a6c15",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Require `SpeechRecognitionEvent` results"
+  },
+  "2026-08-02_ea5999eb": {
+    "ladybird": "ea5999ebbc86028072f1e2de713547ff926f2611",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "16:25",
+    "title": "LibWeb: Declare `MediaStreamTrack.kind` as a `DOMString`"
   }
 }
