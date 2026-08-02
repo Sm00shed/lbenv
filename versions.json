@@ -8861,5 +8861,68 @@
     "flake": "50ed3c992c04d4b31cc41cc270b6a240ab7af10a",
     "time": "23:18",
     "title": "LibWeb: Relayout when an editability flip changes stamped layout facts"
+  },
+  "2026-08-02_093d525e": {
+    "ladybird": "093d525e6e8297afbad713eb46617ba706fb0d54",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:09",
+    "title": "Tests: Import some CSS `d` property tests"
+  },
+  "2026-08-02_cca34004": {
+    "ladybird": "cca34004cd1606dfc3fabf867c5296ffabd36291",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:09",
+    "title": "LibWeb: Simplify `SVGResetValues` equality checking"
+  },
+  "2026-08-02_b64776c2": {
+    "ladybird": "b64776c29fac9d2b823e3c36ec542751732aea06",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:09",
+    "title": "LibWeb: Parse and store the CSS `d` property"
+  },
+  "2026-08-02_c2f7799a": {
+    "ladybird": "c2f7799a548df8ee830ad6e0f10488216c4add5d",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:09",
+    "title": "LibWeb: Respect <path> `d` presentational attribute"
+  },
+  "2026-08-02_892ef767": {
+    "ladybird": "892ef767faf6b3417b9325fb4f396dfa0fcc7889",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:09",
+    "title": "LibWeb: Respect CSS `d` property for SVG `<path>`"
+  },
+  "2026-08-02_633645c1": {
+    "ladybird": "633645c193d4356247b7c8ccb21a9b53e0a497bd",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:10",
+    "title": "LibWeb: Handle calculated number `stroke-width` values"
+  },
+  "2026-08-02_14430a68": {
+    "ladybird": "14430a68a51086bef6c1b1af5cb1ef812bba52c1",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:10",
+    "title": "LibWeb: Handle calculated number `stroke-width` values"
+  },
+  "2026-08-02_69c13a29": {
+    "ladybird": "69c13a296de2fe54eac3da4bba8b2498766e7899",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:10",
+    "title": "LibWeb: Handle calculated number `border-image-width` values"
+  },
+  "2026-08-02_12176d08": {
+    "ladybird": "12176d08207fb7cb8e8e0b87521ed3468cf8ee40",
+    "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
+    "vcpkg": "1bfb778f",
+    "time": "00:10",
+    "title": "LibWeb: Handle calculated number `border-image-outset` values"
   }
 }
