@@ -51,7 +51,7 @@ nix develop github:Sm00shed/lbenv
 ```
 
 Pick a version with `lbenv` (newest) or `lbenv switch <key|hash>`. That creates a
-git worktree for the chosen Ladybird commit under `~/ladybird-envs/<hash>/`, drops
+git worktree for the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, drops
 you into it, and exports `LADYBIRD_BUILD_DIR` (`Build` inside the worktree). Each
 version is fully isolated — its own source and build, never mixed. Configure and
 build there:
@@ -149,7 +149,7 @@ Once selected, the banner shows the commit and the environment:
          nixpkgs  8f0500b9
          vcpkg    1bfb778f
          flake    5e6c3378
-         dir      ~/ladybird-envs/12176d08…
+         dir      ~/lbenv-wt/12176d08…
 
        Reproduce: nix develop github:Sm00shed/lbenv/5e6c3378
 
@@ -162,10 +162,10 @@ nix develop github:Sm00shed/lbenv/<commit-hash>
 ```
 
 Each selected version lives in its own git worktree under
-`~/ladybird-envs/<ladybird-hash>/`, its build in `Build/` inside. Switching never
+`~/lbenv-wt/<ladybird-hash>/`, its build in `Build/` inside. Switching never
 touches another version; jump back to a built one and it is ready instantly. The
 worktrees share one clone (`~/ladybird`) for git objects. Set `LADYBIRD_SRC` /
-`LADYBIRD_ENVS` to relocate the clone or the worktree root.
+`LBENV_WT` to relocate the clone or the worktree root.
 
 `lbenv` reads `versions.json` from a local clone of this flake next to the
 Ladybird source when present:

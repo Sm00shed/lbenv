@@ -174,14 +174,15 @@
             fi
           }
 
-          envs_root() { echo "''${LADYBIRD_ENVS:-$HOME/ladybird-envs}"; }
-          main_src()  { echo "''${LADYBIRD_SRC:-$HOME/ladybird}"; }
+          wt_root()  { echo "''${LBENV_WT:-$HOME/lbenv-wt}"; }
+          main_src() { echo "''${LADYBIRD_SRC:-$HOME/ladybird}"; }
 
           # worktree for a ladybird rev, one dir per hash; prints its path
           ensure_worktree() {
             local lh="$1" src dir
-            src=$(main_src); dir="$(envs_root)/$lh"
+            src=$(main_src); dir="$(wt_root)/$lh"
             [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
+            mkdir -p "$(wt_root)"
             if [ ! -e "$dir" ]; then
               git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
                 || git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
