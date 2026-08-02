@@ -7,8 +7,9 @@ Ladybird's own dependency fetcher is never used.
 
 Tested scope: on Linux x86_64 (NixOS and CachyOS) the browser builds and runs.
 
-The default source is the last tested Ladybird commit tracked in
-`versions.json`. Run `lbenv list` to see all tested versions.
+Versions live in `versions.json` (the machine-readable source, updated
+automatically by CI). No version is active until you pick one with `lbenv` —
+see [Source version management](#source-version-management).
 
 ## Requirements
 
@@ -111,51 +112,60 @@ LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird
 
 ## Source version management
 
-The `lbenv` command is available inside the shell and selects which Ladybird
-commit the shell builds. The active version is printed each time the shell
-starts:
+Ladybird versions are recorded in `versions.json` (the machine-readable source,
+updated automatically by a CI job every few minutes). The picker, the list and
+the banner are all derived from it.
+
+Until you select a version the shell shows none and blocks the build:
 
     Ladybird Dev Shell
-       Source:  94a55b0e (2026-07-18)
-       nixpkgs: 8f0500b9
-       vcpkg:   e9a23531
-       flake:   a7676e8f
 
-The `flake` line is the full snapshot hash: `nix develop
-github:Sm00shed/lbenv/<flake>` reproduces this exact environment —
-toolchain, dependencies, overrides, and source. It also appears as the
-`Reproduce:` line further down the banner.
+       no Ladybird version selected
+         lbenv               newest recorded
+         lbenv switch <key>  pick a version
 
-`lbenv list`
-  Show all tested versions from `versions.json`, including the flake revision
-  each entry freezes.
+       build blocked until a version is selected
 
-`lbenv use <key|hash>`
-  Re-enter the shell on a tested version. Given a tracked key (from `lbenv list`),
-  this freezes the *whole* environment bit-identically: the recorded flake
-  revision — toolchain, dependencies, and overrides — plus the exact Ladybird
-  source and nixpkgs, reproducible on any machine. Given a bare commit hash
-  (untracked), only the Ladybird source is overridden on top of the current
-  flake.
+`lbenv`
+  Enter the newest recorded version.
 
-`lbenv new`
-  Re-enter the shell on the current upstream HEAD. Untested until confirmed.
+`lbenv switch [key|hash]`
+  Pick a recorded version. Without an argument it opens a picker (fzf; each
+  commit as title / date / hash), or prints the same blocks when fzf is missing.
+  A recorded entry freezes the whole environment bit-identically — flake
+  revision, toolchain, dependencies, overrides, plus the exact Ladybird source
+  and nixpkgs.
 
-When filing a bug, include the source hash printed at startup.
+`lbenv new [hash]`
+  Floating placeholder on a commit not in `versions.json` yet (default: upstream
+  HEAD). No frozen flake revision.
 
-For a fully frozen environment use a tracked key with `lbenv use` (above), or pin
-the flake reference directly by appending its commit hash:
+Once selected, the banner shows the commit and the environment:
+
+    Ladybird Dev Shell
+
+       Commit
+         LibWeb: Fix flexbox min-size computation
+         2026-08-02 09:15
+         12176d08207fb7cb8e8e0b87521ed3468cf8ee40
+
+       Environment
+         nixpkgs  8f0500b9
+         vcpkg    1bfb778f
+         flake    5e6c3378
+
+       Reproduce: nix develop github:Sm00shed/lbenv/5e6c3378
+
+The `Reproduce` line rebuilds the exact environment on any machine. When filing a
+bug, include the commit hash from the banner. You can also pin the flake
+reference directly:
 
 ```bash
 nix develop github:Sm00shed/lbenv/<commit-hash>
 ```
 
-Both freeze everything: a flake commit pins its own `flake.lock` (nixpkgs, and
-with it cmake, ninja, clang, and every library) together with the overrides, so
-the environment is bit-identical no matter when it is entered.
-
-`lbenv use` and `lbenv list` read `versions.json` from a local clone of this flake
-next to the Ladybird source when present:
+`lbenv` reads `versions.json` from a local clone of this flake next to the
+Ladybird source when present:
 
     ~/ladybird/
     ~/lbenv/

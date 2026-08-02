@@ -7,7 +7,7 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Overridden at runtime by `lbenv new` / `lbenv use` via --override-input.
+    # lbenv overrides this at runtime
     ladybird = {
       url = "github:LadybirdBrowser/ladybird/94a55b0e9045b1e96307c5e4f0242309c589ecd4";
       flake = false;
@@ -83,7 +83,6 @@
 
         libjpegTurboPinned = pkgs.libjpeg_turbo;
 
-        # APNG is required by LibImageDecoders and on by default in nixpkgs
         libpngPinned = pkgs.libpng;
 
         zlibPinned = pkgs.zlib;
@@ -95,7 +94,6 @@
             hash = "sha256-Yg40aPrsLqhoXTLEalhGm4UO9jBAs1Zc3gWVmCW0gic=";
           };
           patches = [];
-          # 10.2.0 predates the meson "raster" option.
           mesonFlags = builtins.filter (f: !(pkgs.lib.hasInfix "raster" f)) prev.mesonFlags;
         });
 
@@ -110,7 +108,7 @@
 
         freetypePinned = pkgs.freetype;
 
-        # Clang 21 ICEs on vk_helpers.h, build angle with Clang 20.
+        # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
 
         libPkgs = with pkgs; [
@@ -129,7 +127,7 @@
           woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
           mimalloc227.dev
-          # enables AK_HAS_CPPTRACE (symbolized stacktraces)
+          # symbolized stacktraces
           cpptrace
           libtommath
           vulkan-loader.dev vulkan-headers vulkan-memory-allocator
@@ -144,15 +142,25 @@
         versions    = builtins.fromJSON (builtins.readFile ./versions.json);
         ladybirdRev = ladybird.rev or "unknown";
         tracked     = pkgs.lib.filterAttrs (_: v: v.ladybird == ladybirdRev) versions;
+        trackedEntry =
+          if tracked == {} then null
+          else builtins.head (builtins.attrValues tracked);
         ladybirdDate =
           if tracked == {} then "untracked"
           else builtins.head (builtins.attrNames tracked);
-        # Informational: vcpkg pin hash recorded by the update workflow.
+        # recorded vcpkg pin
         ladybirdVcpkg =
-          if tracked == {} then "untracked"
-          else (builtins.head (builtins.attrValues tracked)).vcpkg or "untracked";
+          if trackedEntry == null then "-"
+          else trackedEntry.vcpkg or "-";
+        ladybirdTitle =
+          if trackedEntry == null then "(not recorded)"
+          else trackedEntry.title or "(no title)";
+        ladybirdWhen =
+          if trackedEntry == null then ""
+          else (builtins.substring 0 10 ladybirdDate)
+            + (if (trackedEntry.time or "") == "" then "" else " " + trackedEntry.time);
 
-        # lbenv new | lbenv use [key|hash] | lbenv list [--all|--json]
+        # lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]
         lbenv = pkgs.writeShellScriptBin "lbenv" ''
           set -euo pipefail
           export PATH="${pkgs.lib.makeBinPath (with pkgs; [ jq curl git fzf coreutils ])}:$PATH"
@@ -160,7 +168,7 @@
           REPO="LadybirdBrowser/ladybird"
           FLAKE_REPO="Sm00shed/lbenv"
 
-          # prefer a local clone next to the Ladybird source
+          # local clone if present
           FLAKE_DIR="''${LADYBIRD_FLAKE_DIR:-$PWD/../lbenv}"
           if [ -d "$FLAKE_DIR/.git" ]; then
             FLAKE_REF="$FLAKE_DIR"; LOCAL=1
@@ -176,8 +184,7 @@
             fi
           }
 
-          # --override-input clears self.rev, so pass the intended flake rev
-          # into the shell for the banner (banner falls back to self.rev).
+          # flake rev for the banner
           flake_rev() {
             if [ "$LOCAL" = 1 ]; then
               git -C "$FLAKE_DIR" rev-parse HEAD 2>/dev/null || true
@@ -193,9 +200,7 @@
               --override-input ladybird "github:$REPO/$1"
           }
 
-          # Enter the shell for one entry (JSON value from versions.json).
-          # A recorded flake rev freezes the whole environment; otherwise only
-          # the source (and nixpkgs) is overridden on the current flake.
+          # enter one versions.json entry
           freeze_entry() {
             local entry="$1" lh nh fh
             lh=$(printf '%s' "$entry" | jq -r '.ladybird')
@@ -207,7 +212,7 @@
               exec nix develop "github:$FLAKE_REPO/$fh" \
                 --override-input ladybird "github:$REPO/$lh"
             else
-              echo "warning: no flake rev recorded — not a full freeze" >&2
+              echo "warning: no recorded flake rev — floating, not frozen" >&2
               echo "using ladybird ''${lh:0:8} + nixpkgs ''${nh:0:8}"
               export LBENV_FLAKE_REV="$(flake_rev)"
               exec nix develop "$FLAKE_REF" \
@@ -216,58 +221,53 @@
             fi
           }
 
-          # jq: one human line per entry, newest first: "<date> <time>  <sha8>  <title>"
-          human_lines='to_entries | reverse | .[]
-            | (.value.ladybird) + "\t"
-            + (.key[0:10]) + " "
-            + (((.value.time // "") + "     ")[0:5]) + "  "
-            + (.value.ladybird[0:8]) + "  "
-            + (.value.title // "")'
-
           case "''${1:-}" in
+            "")
+              # newest recorded
+              entry=$(versions | jq -rc 'to_entries | sort_by(.key) | last | .value')
+              [ -n "$entry" ] && [ "$entry" != "null" ] \
+                || { echo "versions.json has no entries" >&2; exit 1; }
+              freeze_entry "$entry"
+              ;;
             new)
-              hash=$(curl -fsSL "https://api.github.com/repos/$REPO/commits/HEAD" \
-                       | jq -r .sha)
-              echo "upstream HEAD is ''${hash:0:8}"
+              hash="''${2:-}"
+              if [ -z "$hash" ]; then
+                hash=$(curl -fsSL "https://api.github.com/repos/$REPO/commits/HEAD" | jq -r .sha)
+                echo "upstream HEAD ''${hash:0:8} — floating placeholder, not recorded"
+              else
+                echo "''${hash:0:8} — floating placeholder, not recorded"
+              fi
               override "$hash"
               ;;
-            use)
+            switch)
               v=$(versions)
               key="''${2:-}"
 
-              # no argument: interactive picker (search by date, hash, or title)
+              # no arg: fzf block picker, or plain blocks without fzf
               if [ -z "$key" ]; then
-                command -v fzf >/dev/null 2>&1 \
-                  || { echo "no version given and fzf missing; usage: lbenv use <key|hash>" >&2; exit 1; }
-                vf=$(mktemp); printf '%s' "$v" > "$vf"
-                pf=$(mktemp)
-                cat > "$pf" <<'JQ'
-.[$k] as $e |
-"Ladybird:  \($e.ladybird)\n" +
-"Datum:     \($k[0:10]) \($e.time // "")\n" +
-"Titel:     \($e.title // "(no title yet)")\n" +
-"vcpkg:     \($e.vcpkg // "-")\n" +
-"env flake: \(($e.flake // "-")[0:8])\n\n" +
-"Reproduce:\n  nix develop github:Sm00shed/lbenv/\($e.flake)\n    --override-input ladybird github:LadybirdBrowser/ladybird/\($e.ladybird)"
-JQ
-                # picker line is "<key>\t<display>"; show display, key is field 1
-                key=$(jq -r '
-                    to_entries | reverse | .[]
-                    | (.key) + "\t"
-                    + (.key[0:10]) + " "
-                    + (((.value.time // "") + "     ")[0:5]) + "  "
-                    + (.value.ladybird[0:8]) + "  "
-                    + (.value.title // "")' "$vf" \
-                  | fzf --delimiter=$'\t' --with-nth=2 \
-                        --preview "jq -rf $pf --arg k {1} $vf" \
-                        --preview-window=right,55% --height=90% \
-                        --prompt='ladybird> ' \
-                  | cut -f1 || true)
-                rm -f "$vf" "$pf"
-                [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
+                if command -v fzf >/dev/null 2>&1; then
+                  key=$(printf '%s' "$v" | jq -j --arg cur "''${LADYBIRD_REV:-}" '
+                      to_entries | sort_by(.key) | reverse | .[]
+                      | (if .value.ladybird == $cur then "* " else "  " end)
+                        + (.value.title // "(no title)") + "\n"
+                      + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
+                      + "    " + (.value.ladybird) + "\u0000"' \
+                    | fzf --read0 --gap --highlight-line --height=90% --prompt='ladybird> ' \
+                    | grep -oE '[0-9a-f]{40}' | head -n1 || true)
+                  [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
+                else
+                  printf '%s' "$v" | jq -r --arg cur "''${LADYBIRD_REV:-}" '
+                      to_entries | sort_by(.key) | reverse | .[]
+                      | (if .value.ladybird == $cur then "* " else "  " end)
+                        + (.value.title // "(no title)") + "\n"
+                      + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
+                      + "    " + (.value.ladybird) + "\n"'
+                  echo "usage: lbenv switch <key|hash>" >&2
+                  exit 1
+                fi
               fi
 
-              # resolve entry: exact key, else partial ladybird-hash match
+              # resolve by key or hash
               entry=$(printf '%s' "$v" | jq -rc --arg k "$key" '.[$k] // empty')
               if [ -z "$entry" ]; then
                 entry=$(printf '%s' "$v" | jq -rc --arg k "$key" \
@@ -277,37 +277,11 @@ JQ
               [ -n "$entry" ] || { echo "not in versions.json: $key" >&2; exit 1; }
               freeze_entry "$entry"
               ;;
-            list)
-              case "''${2:-}" in
-                --json)
-                  # machine view: raw entries, pretty on a terminal, compact when piped
-                  if [ -t 1 ]; then versions | jq .; else versions | jq -c .; fi
-                  ;;
-                ""|--all)
-                  limit=40; [ "''${2:-}" = "--all" ] && limit=0
-                  out=$(versions | jq -r "$human_lines")
-                  total=$(printf '%s\n' "$out" | grep -c . || true)
-                  i=0
-                  while IFS=$'\t' read -r lf disp; do
-                    [ -n "$lf" ] || continue
-                    mark="  "; [ "$lf" = "''${LADYBIRD_REV:-}" ] && mark="* "
-                    printf '%s%s\n' "$mark" "$disp"
-                    i=$((i + 1))
-                    if [ "$limit" -gt 0 ] && [ "$i" -ge "$limit" ]; then
-                      rest=$((total - i))
-                      [ "$rest" -gt 0 ] && \
-                        printf '   … %d more — run `lbenv use` (no argument) to search\n' "$rest"
-                      break
-                    fi
-                  done <<LIST
-$out
-LIST
-                  ;;
-                *) echo "usage: lbenv list [--all|--json]" >&2; exit 1 ;;
-              esac
-              ;;
             *)
-              echo "usage: lbenv {new | use [key|hash] | list [--all|--json]}" >&2
+              echo "usage:" >&2
+              echo "  lbenv                  newest recorded version" >&2
+              echo "  lbenv switch [k|hash]  pick a version (no arg: picker)" >&2
+              echo "  lbenv new [hash]       floating, unrecorded commit" >&2
               exit 1
               ;;
           esac
@@ -343,17 +317,17 @@ LIST
             export CMAKE_PREFIX_PATH="${cmakePrefixPath}''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
             export ICU_ROOT=${pkgs.icu78.dev}
             export PKG_CONFIG_PATH="${ladybirdSkia}/lib/pkgconfig:${ladybirdAngle}/lib/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-            # point the fontconfig include at the version-matched nix conf.d
+            # fontconfig conf.d
             export FONTCONFIG_FILE=${pkgs.runCommand "ladybird-fonts.conf" { } ''
               substitute ${pkgs.makeFontsConf { fontDirectories = with pkgs; [ dejavu_fonts liberation_ttf ]; }} $out \
                 --replace-fail '/etc/fonts/conf.d' '${pkgs.fontconfig.out}/etc/fonts/conf.d'
             ''}
             export CLANGD_PATH=${llvm.clang-unwrapped}/bin/clangd
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-            # keep the working clone on the flake-pinned rev: the banner shows
-            # LADYBIRD_REV, so the checkout must match or you silently build the
-            # old source. only touch a clean tree; patches run after this.
-            if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
+            _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
+
+            # sync the clone to the selected rev, clean tree only
+            if [ "$_sel" = 1 ] && [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ] && [ -d "$PWD/.git" ]; then
               _cur=$(git -C "$PWD" rev-parse HEAD 2>/dev/null || true)
               if [ -n "''${LADYBIRD_REV:-}" ] && [ "$_cur" != "$LADYBIRD_REV" ]; then
                 if [ -z "$(git -C "$PWD" status --porcelain)" ]; then
@@ -368,7 +342,7 @@ LIST
               fi
               unset _cur
             fi
-            # Landlock blocks direct store paths for RequestServer, copy the cert
+            # CA cert into the tree
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
               cp --no-preserve=mode ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
@@ -386,6 +360,13 @@ LIST
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
+
+            # no selection: block builds until a version is chosen
+            if [ "$_sel" != 1 ]; then
+              _lb_guard() { echo "no Ladybird version selected — run 'lbenv' or 'lbenv switch <key>'" >&2; return 1; }
+              cmake() { _lb_guard; }
+              ninja() { _lb_guard; }
+            fi
 
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               if [ ! -f "$PWD/Caches/HSTSPreload/transport_security_state_static.json" ]; then
@@ -408,16 +389,30 @@ LIST
 
             echo ""
             echo "Ladybird Dev Shell"
-            echo "   Source:  ${builtins.substring 0 8 ladybirdRev} (${builtins.head (pkgs.lib.splitString "_" ladybirdDate)})"
-            echo "   nixpkgs: ${builtins.substring 0 8 nixpkgsSrc.rev}"
-            echo "   vcpkg:   ${ladybirdVcpkg}"
-            _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
-            [ -n "$_flakeRev" ] || _flakeRev="unknown"
-            echo "   flake:   ''${_flakeRev:0:8}"
             echo ""
-            echo "   Reproduce: nix develop github:Sm00shed/lbenv/$_flakeRev"
+            if [ "$_sel" = 1 ]; then
+              echo "   Commit"
+              echo "     ${ladybirdTitle}"
+              echo "     ${ladybirdWhen}"
+              echo "     ${ladybirdRev}"
+              echo ""
+              echo "   Environment"
+              echo "     nixpkgs  ${builtins.substring 0 8 nixpkgsSrc.rev}"
+              echo "     vcpkg    ${ladybirdVcpkg}"
+              _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
+              [ -n "$_flakeRev" ] || _flakeRev="unknown"
+              echo "     flake    ''${_flakeRev:0:8}"
+              echo ""
+              echo "   Reproduce: nix develop github:Sm00shed/lbenv/$_flakeRev"
+            else
+              echo "   no Ladybird version selected"
+              echo "     lbenv               newest recorded"
+              echo "     lbenv switch <key>  pick a version"
+              echo ""
+              echo "   build blocked until a version is selected"
+            fi
             echo ""
-            echo "   lbenv new | lbenv use <key|hash> | lbenv list"
+            echo "   lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]"
             echo ""
           '';
         };
