@@ -7,9 +7,9 @@ Ladybird's own dependency fetcher is never used.
 
 Tested scope: on Linux x86_64 (NixOS and CachyOS) the browser builds and runs.
 
-Versions live in `versions.json` (the machine-readable source, updated
-automatically by CI). No version is active until you pick one with `lbenv` —
-see [Source version management](#source-version-management).
+Versions live in the `Sm00shed/lbenv-db` repository: one `<sha>.toml` per
+Ladybird commit, with `latest` naming the newest. No version is active until you
+pick one with `lbenv` — see [Source version management](#source-version-management).
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Enter the shell — it opens an interactive subshell:
 nix develop github:Sm00shed/lbenv
 ```
 
-Pick a version with `lbenv` (newest) or `lbenv switch <key|hash>`. That creates a
+Pick a version with `lbenv` (newest) or `lbenv switch <hash>`. That creates a
 git worktree for the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, drops
 you into it, and exports `LADYBIRD_BUILD_DIR` (`Build` inside the worktree). Each
 version is fully isolated — its own source and build, never mixed. Configure and
@@ -110,8 +110,8 @@ LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird
 
 ## Source version management
 
-Ladybird versions are recorded in `versions.json` (the machine-readable source,
-updated automatically by a CI job every few minutes). The picker, the list and
+Ladybird versions are recorded in the `Sm00shed/lbenv-db` repository (one TOML
+per commit, maintained by a CI job every few minutes). The picker, the list and
 the banner are all derived from it.
 
 Until you pick a version the shell shows none:
@@ -120,20 +120,20 @@ Until you pick a version the shell shows none:
 
        no Ladybird version selected
          lbenv               newest recorded
-         lbenv switch <key>  pick a version
+         lbenv switch <hash>  pick a version
 
 `lbenv`
   Enter the newest recorded version.
 
-`lbenv switch [key|hash]`
+`lbenv switch [hash]`
   Pick a recorded version. Without an argument it opens a picker (fzf; each
-  commit as title / date / hash), or prints the same blocks when fzf is missing.
-  A recorded entry freezes the whole environment bit-identically — flake
-  revision, toolchain, dependencies, overrides, plus the exact Ladybird source
-  and nixpkgs.
+  commit as title / date / hash, newest first), or prints the same blocks when
+  fzf is missing. A recorded entry freezes the whole environment bit-identically
+  — flake revision, toolchain, dependencies, overrides, plus the exact Ladybird
+  source and nixpkgs.
 
 `lbenv new [hash]`
-  Floating placeholder on a commit not in `versions.json` yet (default: upstream
+  Floating placeholder on a commit not in lbenv-db yet (default: upstream
   HEAD). No frozen flake revision.
 
 Once selected, the banner shows the commit and the environment:
@@ -167,14 +167,10 @@ touches another version; jump back to a built one and it is ready instantly. The
 worktrees share one clone (`~/ladybird`) for git objects. Set `LADYBIRD_SRC` /
 `LBENV_WT` to relocate the clone or the worktree root.
 
-`lbenv` reads `versions.json` from a local clone of this flake next to the
-Ladybird source when present:
-
-    ~/ladybird/
-    ~/lbenv/
-
-Point `lbenv` at it with `LADYBIRD_FLAKE_DIR=~/lbenv` if it lives
-elsewhere; otherwise the published flake on GitHub is used.
+`lbenv` reads the database from the `lbenv-db` flake input (works offline), with
+curl as a fallback/refresh. `LADYBIRD_FLAKE_DIR=~/lbenv` points `lbenv` at a
+local clone of *this* flake for `nix develop`; otherwise the published flake on
+GitHub is used.
 
 ## What this environment does
 
