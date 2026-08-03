@@ -425,7 +425,6 @@
               echo "     dir      $PWD"
               echo ""
               echo "   Reproduce: lbenv switch $LBENV_LADYBIRD"
-              echo "   Build:     cmake -B \"\$LADYBIRD_BUILD_DIR\" -GNinja … && ninja -C \"\$LADYBIRD_BUILD_DIR\""
             else
               echo "   no Ladybird version selected"
               echo "     lbenv               newest recorded"
