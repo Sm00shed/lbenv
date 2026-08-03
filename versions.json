@@ -9035,76 +9035,87 @@
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Expose `Document.activeViewTransition`"
+    "title": "LibWeb: Expose `Document.activeViewTransition`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_2062e7b1": {
     "ladybird": "2062e7b1ee7ea79c8456d12788b6ce818e47074b",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Add the CSS transition event handler attributes"
+    "title": "LibWeb: Add the CSS transition event handler attributes",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_d5ed234e": {
     "ladybird": "d5ed234e0bac93121ede8345ff1199318d9a8e21",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Implement `SVGStyleElement.disabled`"
+    "title": "LibWeb: Implement `SVGStyleElement.disabled`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_747461c6": {
     "ladybird": "747461c6ba91ba081772fdc3b13b64b7916d5cca",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Implement `SVGSVGElement.createSVGNumber()`"
+    "title": "LibWeb: Implement `SVGSVGElement.createSVGNumber()`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_10009abd": {
     "ladybird": "10009abd11bf34b5536ddcd6cd50ac12a3ea2ecd",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Add `TransitionEvent.animation`"
+    "title": "LibWeb: Add `TransitionEvent.animation`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_914269f3": {
     "ladybird": "914269f326d18a9a1a611b56c7781d3afdfcc81a",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Add `PopStateEvent.hasUAVisualTransition`"
+    "title": "LibWeb: Add `PopStateEvent.hasUAVisualTransition`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_9887aeb1": {
     "ladybird": "9887aeb1cd178c82559c8ef7f045507538ff8fdf",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Add `InputEvent.dataTransfer`"
+    "title": "LibWeb: Add `InputEvent.dataTransfer`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_8e042b1f": {
     "ladybird": "8e042b1fddb725e99ed4697cea41ed22bfe4a71c",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:31",
-    "title": "LibWeb: Add `InputEventInit.targetRanges`"
+    "title": "LibWeb: Add `InputEventInit.targetRanges`",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_ebf4bf2c": {
     "ladybird": "ebf4bf2cf01e4d3e78409c3b4dc92478762aa655",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:32",
-    "title": "LibWeb: Fix LegacyOverrideBuiltIns capitalization"
+    "title": "LibWeb: Fix LegacyOverrideBuiltIns capitalization",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_41f4568f": {
     "ladybird": "41f4568f8df57996c555632667c5e1b2b33cee47",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "08:32",
-    "title": "Meta: Validate WebIDL extended attributes"
+    "title": "Meta: Validate WebIDL extended attributes",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   },
   "2026-08-03_ee8ae05c": {
     "ladybird": "ee8ae05c80f8e47e825e73fb4566c15c178fbc84",
     "nixpkgs": "8f0500b9660505dc3cb647775fe9a978a74b5283",
     "vcpkg": "1bfb778f",
     "time": "09:18",
-    "title": "LibWeb: Resolve relative positions during the Rust layout commit"
+    "title": "LibWeb: Resolve relative positions during the Rust layout commit",
+    "flake": "672356030e183a0be95aca5a53fda1afc780eb35"
   }
 }
