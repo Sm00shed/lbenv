@@ -235,11 +235,12 @@
 
           # enter one lbenv-db entry (by ladybird sha), in its worktree
           freeze_sha() {
-            local sha="$1" toml lh fh title vcpkg date time dir
+            local sha="$1" toml lh lbrev npkgs title vcpkg date time dir
             toml="$(db_toml "$sha")" || { echo "not in lbenv-db: $sha" >&2; exit 1; }
             [ -n "$toml" ] || { echo "not in lbenv-db: $sha" >&2; exit 1; }
             lh="$(printf '%s\n' "$toml" | toml_get ladybird)"; lh="''${lh:-$sha}"
-            fh="$(printf '%s\n' "$toml" | toml_get flake)"
+            lbrev="$(printf '%s\n' "$toml" | toml_get lbenv)"    # build logic (flake.nix), pins overrides
+            npkgs="$(printf '%s\n' "$toml" | toml_get nixpkgs)"  # nixpkgs branch floats, pin it
             title="$(printf '%s\n' "$toml" | toml_get title)"
             vcpkg="$(printf '%s\n' "$toml" | toml_get vcpkg)"
             date="$(printf '%s\n' "$toml" | toml_get date)"
@@ -250,13 +251,17 @@
             export LBENV_WHEN="''${date}''${time:+ $time}"
             dir=$(ensure_worktree "$lh")
             cd "$dir" || exit 1
-            if [ -n "$fh" ]; then
-              export LBENV_FLAKE_REV="$fh"
-              exec nix develop "github:$FLAKE_REPO/$fh" --quiet
+
+            local dev=()
+            [ -n "$npkgs" ] && dev+=(--override-input nixpkgs "github:NixOS/nixpkgs/$npkgs")
+
+            if [ -n "$lbrev" ]; then
+              export LBENV_FLAKE_REV="$lbrev"
+              exec nix develop "github:$FLAKE_REPO/$lbrev" "''${dev[@]}" --quiet
             else
-              echo "warning: no recorded flake rev — floating, not frozen" >&2
+              echo "warning: no recorded lbenv rev — using current flake, not frozen" >&2
               export LBENV_FLAKE_REV="$(flake_rev)"
-              exec nix develop "$FLAKE_REF" --quiet
+              exec nix develop "$FLAKE_REF" "''${dev[@]}" --quiet
             fi
           }
 
