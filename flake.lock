@@ -35,6 +35,22 @@
         "type": "github"
       }
     },
+    "lbenv-db": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785746639,
+        "narHash": "sha256-GJUTh+JgH9kjag4NoZK1mK3UEivOX96Aq6FH32+mmUc=",
+        "owner": "Sm00shed",
+        "repo": "lbenv-db",
+        "rev": "d1fbd3024e5b3fc894b55544ebedaf7e27272b3f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Sm00shed",
+        "repo": "lbenv-db",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1783703440,
@@ -55,6 +71,7 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "ladybird": "ladybird",
+        "lbenv-db": "lbenv-db",
         "nixpkgs": "nixpkgs"
       }
     },

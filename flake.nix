@@ -12,9 +12,15 @@
       url = "github:LadybirdBrowser/ladybird/94a55b0e9045b1e96307c5e4f0242309c589ecd4";
       flake = false;
     };
+
+    # version database: one <ladybird-sha>.toml per commit, plus `latest`
+    lbenv-db = {
+      url = "github:Sm00shed/lbenv-db";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ladybird }:
+  outputs = { self, nixpkgs, flake-utils, ladybird, lbenv-db }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -143,10 +149,12 @@
         # lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]
         lbenv = pkgs.writeShellScriptBin "lbenv" ''
           set -euo pipefail
-          export PATH="${pkgs.lib.makeBinPath (with pkgs; [ jq curl git fzf coreutils ])}:$PATH"
+          export PATH="${pkgs.lib.makeBinPath (with pkgs; [ curl git fzf coreutils ])}:$PATH"
 
           REPO="LadybirdBrowser/ladybird"
           FLAKE_REPO="Sm00shed/lbenv"
+          DB_REPO="Sm00shed/lbenv-db"
+          DB_DIR="${lbenv-db}"   # flake input checkout, always present (offline)
 
           # local clone if present
           FLAKE_DIR="''${LADYBIRD_FLAKE_DIR:-$PWD/../lbenv}"
@@ -156,12 +164,38 @@
             FLAKE_REF="github:$FLAKE_REPO"; LOCAL=0
           fi
 
-          versions() {
-            if [ "$LOCAL" = 1 ]; then
-              cat "$FLAKE_DIR/versions.json"
+          # strict single-line "key = "value"" TOML, from stdin
+          toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p"; }
+
+          # newest ladybird sha: local input first, curl to refresh
+          db_latest() {
+            if [ -f "$DB_DIR/latest" ]; then
+              cat "$DB_DIR/latest"
             else
-              curl -fsSL "https://raw.githubusercontent.com/$FLAKE_REPO/main/versions.json"
+              curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest"
             fi
+          }
+
+          # one commit's TOML to stdout: local input first, curl fallback
+          db_toml() {
+            if [ -f "$DB_DIR/$1.toml" ]; then
+              cat "$DB_DIR/$1.toml"
+            else
+              curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/$1.toml"
+            fi
+          }
+
+          # every entry as "date<TAB>time<TAB>sha<TAB>title", newest first
+          list_entries() {
+            local f sha date time title
+            for f in "$DB_DIR"/*.toml; do
+              [ -e "$f" ] || continue
+              sha="$(basename "$f" .toml)"
+              date="$(toml_get date  < "$f")"
+              time="$(toml_get time  < "$f")"
+              title="$(toml_get title < "$f")"
+              printf '%s\t%s\t%s\t%s\n' "''${date:-0000-00-00}" "''${time:-00:00}" "$sha" "''${title:-(no title)}"
+            done | sort -r
           }
 
           # flake rev for the banner
@@ -169,8 +203,7 @@
             if [ "$LOCAL" = 1 ]; then
               git -C "$FLAKE_DIR" rev-parse HEAD 2>/dev/null || true
             else
-              curl -fsSL "https://api.github.com/repos/$FLAKE_REPO/commits/HEAD" \
-                | jq -r '.sha // empty' 2>/dev/null || true
+              git ls-remote "https://github.com/$FLAKE_REPO" HEAD 2>/dev/null | cut -f1
             fi
           }
 
@@ -200,15 +233,21 @@
             exec nix develop "$FLAKE_REF" --quiet
           }
 
-          # enter one versions.json entry, in its worktree
-          freeze_entry() {
-            local entry="$1" lh fh dir
-            lh=$(printf '%s' "$entry" | jq -r '.ladybird')
-            fh=$(printf '%s' "$entry" | jq -r '.flake // empty')
+          # enter one lbenv-db entry (by ladybird sha), in its worktree
+          freeze_sha() {
+            local sha="$1" toml lh fh title vcpkg date time dir
+            toml="$(db_toml "$sha")" || { echo "not in lbenv-db: $sha" >&2; exit 1; }
+            [ -n "$toml" ] || { echo "not in lbenv-db: $sha" >&2; exit 1; }
+            lh="$(printf '%s\n' "$toml" | toml_get ladybird)"; lh="''${lh:-$sha}"
+            fh="$(printf '%s\n' "$toml" | toml_get flake)"
+            title="$(printf '%s\n' "$toml" | toml_get title)"
+            vcpkg="$(printf '%s\n' "$toml" | toml_get vcpkg)"
+            date="$(printf '%s\n' "$toml" | toml_get date)"
+            time="$(printf '%s\n' "$toml" | toml_get time)"
             export LBENV_LADYBIRD="$lh"
-            export LBENV_TITLE="$(printf '%s' "$entry" | jq -r '.title // "(no title)"')"
-            export LBENV_VCPKG="$(printf '%s' "$entry" | jq -r '.vcpkg // "-"')"
-            export LBENV_WHEN="$(printf '%s' "$entry" | jq -r '(.date // "") + (if (.time // "") == "" then "" else " " + .time end)')"
+            export LBENV_TITLE="''${title:-(no title)}"
+            export LBENV_VCPKG="''${vcpkg:--}"
+            export LBENV_WHEN="''${date}''${time:+ $time}"
             dir=$(ensure_worktree "$lh")
             cd "$dir" || exit 1
             if [ -n "$fh" ]; then
@@ -223,16 +262,15 @@
 
           case "''${1:-}" in
             "")
-              # newest recorded
-              entry=$(versions | jq -rc 'to_entries | last | (.value + {date: (.key[0:10])})')
-              [ -n "$entry" ] && [ "$entry" != "null" ] \
-                || { echo "versions.json has no entries" >&2; exit 1; }
-              freeze_entry "$entry"
+              # newest recorded (lbenv-db `latest`)
+              sha=$(db_latest | tr -d '[:space:]')
+              [ -n "$sha" ] || { echo "lbenv-db: cannot read latest" >&2; exit 1; }
+              freeze_sha "$sha"
               ;;
             new)
               hash="''${2:-}"
               if [ -z "$hash" ]; then
-                hash=$(curl -fsSL "https://api.github.com/repos/$REPO/commits/HEAD" | jq -r .sha)
+                hash=$(git ls-remote "https://github.com/$REPO" HEAD 2>/dev/null | cut -f1)
                 echo "upstream HEAD ''${hash:0:8} — floating placeholder, not recorded"
               else
                 echo "''${hash:0:8} — floating placeholder, not recorded"
@@ -240,42 +278,41 @@
               override "$hash"
               ;;
             switch)
-              v=$(versions)
               key="''${2:-}"
+              cur="''${LBENV_LADYBIRD:-}"
+
+              # one "* Title / date time / sha" block per entry; $1 is the record separator
+              blocks() {
+                local sep date time sha title mark
+                sep="$(printf '\t')"
+                list_entries | while IFS="$sep" read -r date time sha title; do
+                  mark="  "; [ "$sha" = "$cur" ] && mark="* "
+                  printf '%s%s\n    %s %s\n    %s%b' \
+                    "$mark" "$title" "$date" "$time" "$sha" "$1"
+                done
+              }
 
               # no arg: fzf block picker, or plain blocks without fzf
               if [ -z "$key" ]; then
                 if command -v fzf >/dev/null 2>&1; then
-                  key=$(printf '%s' "$v" | jq -j --arg cur "''${LBENV_LADYBIRD:-}" '
-                      to_entries | reverse | .[]
-                      | (if .value.ladybird == $cur then "* " else "  " end)
-                        + (.value.title // "(no title)") + "\n"
-                      + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
-                      + "    " + (.value.ladybird) + "\u0000"' \
-                    | fzf --read0 --gap --highlight-line --height=90% --prompt='ladybird> ' \
+                  key=$(blocks '\0' | fzf --read0 --gap --highlight-line --height=90% --prompt='ladybird> ' \
                     | grep -oE '[0-9a-f]{40}' | head -n1 || true)
                   [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
                 else
-                  printf '%s' "$v" | jq -r --arg cur "''${LBENV_LADYBIRD:-}" '
-                      to_entries | reverse | .[]
-                      | (if .value.ladybird == $cur then "* " else "  " end)
-                        + (.value.title // "(no title)") + "\n"
-                      + "    " + (.key[0:10]) + " " + (.value.time // "") + "\n"
-                      + "    " + (.value.ladybird) + "\n"'
-                  echo "usage: lbenv switch <key|hash>" >&2
+                  blocks '\n'
+                  echo "usage: lbenv switch <sha>" >&2
                   exit 1
                 fi
               fi
 
-              # resolve by key or hash
-              entry=$(printf '%s' "$v" | jq -rc --arg k "$key" '.[$k] as $e | if $e then $e + {date: ($k[0:10])} else empty end')
-              if [ -z "$entry" ]; then
-                entry=$(printf '%s' "$v" | jq -rc --arg k "$key" \
-                  'to_entries[] | select(.value.ladybird | startswith($k)) | (.value + {date: (.key[0:10])})' \
-                  | head -n1)
+              # exact sha file, else prefix match against local db; else curl fallback in freeze_sha
+              sha="$key"
+              if [ ! -f "$DB_DIR/$key.toml" ]; then
+                match=$(cd "$DB_DIR" && ls -1 ./*.toml 2>/dev/null \
+                  | sed 's,^\./,,; s,\.toml$,,' | grep -E "^$key" | head -n1 || true)
+                [ -n "$match" ] && sha="$match"
               fi
-              [ -n "$entry" ] || { echo "not in versions.json: $key" >&2; exit 1; }
-              freeze_entry "$entry"
+              freeze_sha "$sha"
               ;;
             *)
               echo "usage:" >&2
@@ -376,7 +413,7 @@
               echo ""
               echo "   Environment"
               echo "     nixpkgs  ${builtins.substring 0 8 nixpkgsSrc.rev}"
-              echo "     vcpkg    ''${LBENV_VCPKG:--}"
+              _vcpkg="''${LBENV_VCPKG:--}"; echo "     vcpkg    ''${_vcpkg:0:8}"
               _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
               [ -n "$_flakeRev" ] || _flakeRev="unknown"
               echo "     flake    ''${_flakeRev:0:8}"
