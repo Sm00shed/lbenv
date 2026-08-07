@@ -172,7 +172,7 @@
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
             [ "@BINPATH@" "@DB_DIR@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git fzf coreutils ])}" "${lbenv-db}" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils ])}" "${lbenv-db}" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 

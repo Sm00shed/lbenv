@@ -41,19 +41,6 @@ db_toml() {
   fi
 }
 
-# every entry as "date<TAB>time<TAB>sha<TAB>title", newest first
-list_entries() {
-  local f sha date time title
-  for f in "$DB_DIR"/*.toml; do
-    [ -e "$f" ] || continue
-    sha="$(basename "$f" .toml)"
-    date="$(toml_get date  < "$f")"
-    time="$(toml_get time  < "$f")"
-    title="$(toml_get title < "$f")"
-    printf '%s\t%s\t%s\t%s\n' "${date:-0000-00-00}" "${time:-00:00}" "$sha" "${title:-(no title)}"
-  done | sort -r
-}
-
 # flake rev for the banner
 flake_rev() {
   if [ "$LOCAL" = 1 ]; then
@@ -177,31 +164,7 @@ case "${1:-}" in
     ;;
   switch)
     key="${2:-}"
-    cur="${LBENV_LADYBIRD:-}"
-
-    # one "* Title / date time / sha" block per entry; $1 is the record separator
-    blocks() {
-      local sep date time sha title mark
-      sep="$(printf '\t')"
-      list_entries | while IFS="$sep" read -r date time sha title; do
-        mark="  "; [ "$sha" = "$cur" ] && mark="* "
-        printf '%s%s\n    %s %s\n    %s%b' \
-          "$mark" "$title" "$date" "$time" "$sha" "$1"
-      done
-    }
-
-    # no arg: fzf block picker, or plain blocks without fzf
-    if [ -z "$key" ]; then
-      if command -v fzf >/dev/null 2>&1; then
-        key=$(blocks '\0' | fzf --read0 --gap --highlight-line --height=90% --prompt='ladybird> ' \
-          | grep -oE '[0-9a-f]{40}' | head -n1 || true)
-        [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
-      else
-        blocks '\n'
-        echo "usage: lbenv switch <sha>" >&2
-        exit 1
-      fi
-    fi
+    [ -n "$key" ] || { echo "usage: lbenv switch <sha>" >&2; exit 1; }
 
     # exact sha file, else prefix match against local db; else curl fallback in freeze_sha
     sha="$key"
@@ -215,7 +178,7 @@ case "${1:-}" in
   *)
     echo "usage:" >&2
     echo "  lbenv                  newest recorded version" >&2
-    echo "  lbenv switch [k|hash]  pick a version (no arg: picker)" >&2
+    echo "  lbenv switch <hash>    pick a recorded version by sha (prefix ok)" >&2
     echo "  lbenv dev              develop on newest recorded (own branch, inherited pin)" >&2
     echo "  lbenv new [hash]       floating, unrecorded commit" >&2
     exit 1
