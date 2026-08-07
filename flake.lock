@@ -38,11 +38,11 @@
     "lbenv-db": {
       "flake": false,
       "locked": {
-        "lastModified": 1785760435,
-        "narHash": "sha256-MmSxPh6h+G/1GvX/Yea6i2+ipRdLkixpmOVBtZ2wjGE=",
+        "lastModified": 1786126102,
+        "narHash": "sha256-WO/fv8g/ca3bmdxY5a4P2m9dnEJy9f3e3lideNtPdxk=",
         "owner": "Sm00shed",
         "repo": "lbenv-db",
-        "rev": "411dc3bc708dbbe2626d451f309675995eff6a40",
+        "rev": "e460354fac31147763b065747ff8e4299542d640",
         "type": "github"
       },
       "original": {

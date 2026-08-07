@@ -114,12 +114,33 @@
 
         freetypePinned = pkgs.freetype;
 
+        # freeze at the nixos-26.05 versions so a stable point-bump can't move them
+        sdl3Pinned = pkgs.sdl3.overrideAttrs (_: rec {
+          version = "3.4.10";
+          src = pkgs.fetchFromGitHub {
+            owner = "libsdl-org";
+            repo  = "SDL";
+            rev   = "refs/tags/release-${version}";
+            hash  = "sha256-6Dph2eLiJUmpQzPWe8EuY5LrWhrFwde2f2dwfgCcWNw=";
+          };
+        });
+
+        libavifPinned = pkgs.libavif.overrideAttrs (_: rec {
+          version = "1.4.1";
+          src = pkgs.fetchFromGitHub {
+            owner = "AOMediaCodec";
+            repo  = "libavif";
+            rev   = "v${version}";
+            hash  = "sha256-035SoxHfN121mp3LGwGykReCi1WJbl2/nZH8c/VwABU=";
+          };
+        });
+
         # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
 
         libPkgs = with pkgs; [
-          curlFull ffmpegPinned.lib fontconfig.lib libavif ladybirdAngle libjxl libwebp libxcrypt
-          opensslPinned sdl3 brotli.lib libhwy lcms2 zstd libidn2 woff2.lib icu78
+          curlFull ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
+          opensslPinned sdl3Pinned brotli.lib libhwy lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
           fmt simdutf simdjson libtommath libpsl libedit cpptrace
           libdrm vulkan-loader vulkan-memory-allocator
@@ -128,8 +149,8 @@
         ];
 
         cmakePrefixParts = with pkgs; [
-          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlFull.dev sdl3.dev fmt.dev
-          fontconfig.dev libavif.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
+          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlFull.dev sdl3Pinned.dev fmt.dev
+          fontconfig.dev libavifPinned.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
           woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
           mimalloc227.dev
@@ -146,192 +167,18 @@
         nixpkgsSrc = nixpkgs;
 
 
-        # lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]
-        lbenv = pkgs.writeShellScriptBin "lbenv" ''
-          set -euo pipefail
-          export PATH="${pkgs.lib.makeBinPath (with pkgs; [ curl git fzf coreutils ])}:$PATH"
-
-          REPO="LadybirdBrowser/ladybird"
-          FLAKE_REPO="Sm00shed/lbenv"
-          DB_REPO="Sm00shed/lbenv-db"
-          DB_DIR="${lbenv-db}"   # flake input checkout, always present (offline)
-
-          # local clone if present
-          FLAKE_DIR="''${LADYBIRD_FLAKE_DIR:-$PWD/../lbenv}"
-          if [ -d "$FLAKE_DIR/.git" ]; then
-            FLAKE_REF="$FLAKE_DIR"; LOCAL=1
-          else
-            FLAKE_REF="github:$FLAKE_REPO"; LOCAL=0
-          fi
-
-          # strict single-line "key = "value"" TOML, from stdin
-          toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p"; }
-
-          # newest ladybird sha: local input first, curl to refresh
-          db_latest() {
-            if [ -f "$DB_DIR/latest" ]; then
-              cat "$DB_DIR/latest"
-            else
-              curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest"
-            fi
-          }
-
-          # one commit's TOML to stdout: local input first, curl fallback
-          db_toml() {
-            if [ -f "$DB_DIR/$1.toml" ]; then
-              cat "$DB_DIR/$1.toml"
-            else
-              curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/$1.toml"
-            fi
-          }
-
-          # every entry as "date<TAB>time<TAB>sha<TAB>title", newest first
-          list_entries() {
-            local f sha date time title
-            for f in "$DB_DIR"/*.toml; do
-              [ -e "$f" ] || continue
-              sha="$(basename "$f" .toml)"
-              date="$(toml_get date  < "$f")"
-              time="$(toml_get time  < "$f")"
-              title="$(toml_get title < "$f")"
-              printf '%s\t%s\t%s\t%s\n' "''${date:-0000-00-00}" "''${time:-00:00}" "$sha" "''${title:-(no title)}"
-            done | sort -r
-          }
-
-          # flake rev for the banner
-          flake_rev() {
-            if [ "$LOCAL" = 1 ]; then
-              git -C "$FLAKE_DIR" rev-parse HEAD 2>/dev/null || true
-            else
-              git ls-remote "https://github.com/$FLAKE_REPO" HEAD 2>/dev/null | cut -f1
-            fi
-          }
-
-          wt_root()  { echo "''${LBENV_WT:-$HOME/lbenv-wt}"; }
-          main_src() { echo "''${LADYBIRD_SRC:-$HOME/ladybird}"; }
-
-          # worktree for a ladybird rev, one dir per hash; prints its path
-          ensure_worktree() {
-            local lh="$1" src dir
-            src=$(main_src); dir="$(wt_root)/$lh"
-            [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
-            mkdir -p "$(wt_root)"
-            if [ ! -e "$dir" ]; then
-              git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
-                || git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
-                || git -C "$src" fetch --quiet origin || true
-              git -C "$src" worktree add --quiet --detach "$dir" "$lh" >&2
-            fi
-            echo "$dir"
-          }
-
-          override() {
-            local dir; dir=$(ensure_worktree "$1")
-            export LBENV_FLAKE_REV="$(flake_rev)"
-            export LBENV_LADYBIRD="$1" LBENV_TITLE="(not recorded)" LBENV_WHEN="" LBENV_VCPKG="-"
-            cd "$dir" || exit 1
-            exec nix develop "$FLAKE_REF" --quiet
-          }
-
-          # enter one lbenv-db entry (by ladybird sha), in its worktree
-          freeze_sha() {
-            local sha="$1" toml lh lbrev npkgs title vcpkg date time dir
-            toml="$(db_toml "$sha")" || { echo "not in lbenv-db: $sha" >&2; exit 1; }
-            [ -n "$toml" ] || { echo "not in lbenv-db: $sha" >&2; exit 1; }
-            lh="$(printf '%s\n' "$toml" | toml_get ladybird)"; lh="''${lh:-$sha}"
-            lbrev="$(printf '%s\n' "$toml" | toml_get lbenv)"    # build logic (flake.nix), pins overrides
-            npkgs="$(printf '%s\n' "$toml" | toml_get nixpkgs)"  # nixpkgs branch floats, pin it
-            title="$(printf '%s\n' "$toml" | toml_get title)"
-            vcpkg="$(printf '%s\n' "$toml" | toml_get vcpkg)"
-            date="$(printf '%s\n' "$toml" | toml_get date)"
-            time="$(printf '%s\n' "$toml" | toml_get time)"
-            export LBENV_LADYBIRD="$lh"
-            export LBENV_TITLE="''${title:-(no title)}"
-            export LBENV_VCPKG="''${vcpkg:--}"
-            export LBENV_WHEN="''${date}''${time:+ $time}"
-            dir=$(ensure_worktree "$lh")
-            cd "$dir" || exit 1
-
-            local dev=()
-            [ -n "$npkgs" ] && dev+=(--override-input nixpkgs "github:NixOS/nixpkgs/$npkgs")
-
-            if [ -n "$lbrev" ]; then
-              export LBENV_FLAKE_REV="$lbrev"
-              exec nix develop "github:$FLAKE_REPO/$lbrev" "''${dev[@]}" --quiet
-            else
-              echo "warning: no recorded lbenv rev — using current flake, not frozen" >&2
-              export LBENV_FLAKE_REV="$(flake_rev)"
-              exec nix develop "$FLAKE_REF" "''${dev[@]}" --quiet
-            fi
-          }
-
-          case "''${1:-}" in
-            "")
-              # newest recorded (lbenv-db `latest`)
-              sha=$(db_latest | tr -d '[:space:]')
-              [ -n "$sha" ] || { echo "lbenv-db: cannot read latest" >&2; exit 1; }
-              freeze_sha "$sha"
-              ;;
-            new)
-              hash="''${2:-}"
-              if [ -z "$hash" ]; then
-                hash=$(git ls-remote "https://github.com/$REPO" HEAD 2>/dev/null | cut -f1)
-                echo "upstream HEAD ''${hash:0:8} — floating placeholder, not recorded"
-              else
-                echo "''${hash:0:8} — floating placeholder, not recorded"
-              fi
-              override "$hash"
-              ;;
-            switch)
-              key="''${2:-}"
-              cur="''${LBENV_LADYBIRD:-}"
-
-              # one "* Title / date time / sha" block per entry; $1 is the record separator
-              blocks() {
-                local sep date time sha title mark
-                sep="$(printf '\t')"
-                list_entries | while IFS="$sep" read -r date time sha title; do
-                  mark="  "; [ "$sha" = "$cur" ] && mark="* "
-                  printf '%s%s\n    %s %s\n    %s%b' \
-                    "$mark" "$title" "$date" "$time" "$sha" "$1"
-                done
-              }
-
-              # no arg: fzf block picker, or plain blocks without fzf
-              if [ -z "$key" ]; then
-                if command -v fzf >/dev/null 2>&1; then
-                  key=$(blocks '\0' | fzf --read0 --gap --highlight-line --height=90% --prompt='ladybird> ' \
-                    | grep -oE '[0-9a-f]{40}' | head -n1 || true)
-                  [ -n "$key" ] || { echo "aborted" >&2; exit 1; }
-                else
-                  blocks '\n'
-                  echo "usage: lbenv switch <sha>" >&2
-                  exit 1
-                fi
-              fi
-
-              # exact sha file, else prefix match against local db; else curl fallback in freeze_sha
-              sha="$key"
-              if [ ! -f "$DB_DIR/$key.toml" ]; then
-                match=$(cd "$DB_DIR" && ls -1 ./*.toml 2>/dev/null \
-                  | sed 's,^\./,,; s,\.toml$,,' | grep -E "^$key" | head -n1 || true)
-                [ -n "$match" ] && sha="$match"
-              fi
-              freeze_sha "$sha"
-              ;;
-            *)
-              echo "usage:" >&2
-              echo "  lbenv                  newest recorded version" >&2
-              echo "  lbenv switch [k|hash]  pick a version (no arg: picker)" >&2
-              echo "  lbenv new [hash]       floating, unrecorded commit" >&2
-              exit 1
-              ;;
-          esac
-        '';
+        # lbenv: bash logic lives in ./scripts/lbenv.sh (plain, shellcheck-able).
+        # @BINPATH@ and @DB_DIR@ are substituted in at build time.
+        lbenv = pkgs.writeShellScriptBin "lbenv" (
+          builtins.replaceStrings
+            [ "@BINPATH@" "@DB_DIR@" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git fzf coreutils ])}" "${lbenv-db}" ]
+            (builtins.readFile ./scripts/lbenv.sh)
+        );
 
       in {
         devShells.default = pkgs.mkShell {
-          name = "ladybird-dev";
+          name = "lbdev";
 
           NIX_ENFORCE_NO_NATIVE = "0";
 
@@ -340,7 +187,7 @@
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlFull.dev fast-float ffmpegPinned.dev fmt fmt.dev fontconfig.dev
-              libavif.dev libjxl.dev opensslPinned.dev sdl3.dev simdutf brotli.dev lcms2.dev
+              libavifPinned.dev libjxl.dev opensslPinned.dev sdl3Pinned.dev simdutf brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
