@@ -114,7 +114,7 @@
 
         freetypePinned = pkgs.freetype;
 
-        # freeze at the nixos-26.05 versions so a stable point-bump can't move them
+        # pin to nixos-26.05, no point-bump drift
         sdl3Pinned = pkgs.sdl3.overrideAttrs (_: rec {
           version = "3.4.10";
           src = pkgs.fetchFromGitHub {
@@ -221,7 +221,8 @@
                  "$PWD/Caches/CACERT/ca-bundle.crt"
             fi
             LADYBIRD_SRC_DIR="$PWD"
-            export LADYBIRD_CERTIFICATE="''${LADYBIRD_CERTIFICATE:-$PWD/Caches/CACERT/ca-bundle.crt}"
+            # per-worktree, not an inherited path
+            export LADYBIRD_CERTIFICATE="$PWD/Caches/CACERT/ca-bundle.crt"
             unset VCPKG_ROOT
             unset CMAKE_TOOLCHAIN_FILE
 
