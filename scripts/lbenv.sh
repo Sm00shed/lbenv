@@ -7,6 +7,9 @@
 set -euo pipefail
 export PATH="@BINPATH@:$PATH"
 
+# let each devShell set its own cert path, don't inherit a stale one
+unset LADYBIRD_CERTIFICATE
+
 REPO="LadybirdBrowser/ladybird"
 FLAKE_REPO="Sm00shed/lbenv"
 DB_REPO="Sm00shed/lbenv-db"
