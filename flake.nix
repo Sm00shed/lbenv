@@ -87,6 +87,9 @@
             url  = "https://sqlite.org/2026/sqlite-src-3520000.zip";
             hash = "sha256-ZSqYyoM+1jiAmlK+wiWn83eZ9xqZV3j5zLaK0DvR/BE=";
           };
+          # nixpkgs' sqlite patches target the packaged version; they may not
+          # apply to 3.52.0. Clear them, like the other version-bumped pins.
+          patches = [];
         });
 
         libjpegTurboPinned = pkgs.libjpeg_turbo;
