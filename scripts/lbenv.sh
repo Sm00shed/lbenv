@@ -131,7 +131,7 @@ override() {
 #    (dev: own commit inherits the recorded pin). $3 optional branch name.
 freeze_sha() {
   local sha="$1" checkout="${2:-}" branch="${3:-}"
-  local toml lh lbrev npkgs title vcpkg date time dir
+  local toml lh lbrev npkgs title vcpkg date time dir head
   toml="$(db_toml "$sha")" || { echo "not in lbenv-db: $sha" >&2; exit 1; }
   [ -n "$toml" ] || { echo "not in lbenv-db: $sha" >&2; exit 1; }
   lh="$(printf '%s\n' "$toml" | toml_get ladybird)"; lh="${lh:-$sha}"
@@ -150,6 +150,10 @@ freeze_sha() {
   dir=$(ensure_worktree "$lh" "$branch")
   write_envrc "$dir" "$lbrev" "$npkgs"
   cd "$dir" || exit 1
+  # banner must show the worktree's real HEAD: a reused dev branch can be ahead
+  # of the recorded sha, so the displayed commit would otherwise be wrong
+  head="$(git rev-parse HEAD 2>/dev/null || true)"
+  [ -n "$head" ] && export LBENV_LADYBIRD="$head"
 
   local dev=()
   [ -n "$npkgs" ] && dev+=(--override-input nixpkgs "github:NixOS/nixpkgs/$npkgs")
