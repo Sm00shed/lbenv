@@ -252,7 +252,10 @@
                 mkdir -p "$PWD/Caches/HSTSPreload"
                 cp --no-preserve=mode ${hstsPreload} "$PWD/Caches/HSTSPreload/transport_security_state_static.json"
               fi
-              if [ ! -f "$PWD/Caches/UCD/version.txt" ]; then
+              # refill on version mismatch, not just when missing — otherwise a
+              # nixpkgs bump leaves stale Unicode data forever
+              if [ "$(cat "$PWD/Caches/UCD/version.txt" 2>/dev/null || true)" != '${pkgs.unicode-character-database.version}' ]; then
+                rm -rf "$PWD/Caches/UCD"
                 mkdir -p "$PWD/Caches/UCD"
                 cp --no-preserve=mode -r ${pkgs.unicode-character-database}/share/unicode/. "$PWD/Caches/UCD/"
                 cp --no-preserve=mode ${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt "$PWD/Caches/UCD/"
