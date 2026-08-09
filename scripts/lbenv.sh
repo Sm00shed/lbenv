@@ -195,6 +195,7 @@ case "${1:-}" in
     hash="${2:-}"
     if [ -z "$hash" ]; then
       hash=$(git ls-remote "https://github.com/$REPO" HEAD 2>/dev/null | cut -f1)
+      [ -n "$hash" ] || { echo "cannot resolve upstream HEAD (offline?)" >&2; exit 1; }
       echo "upstream HEAD ${hash:0:8} — floating placeholder, not recorded"
     else
       echo "${hash:0:8} — floating placeholder, not recorded"
