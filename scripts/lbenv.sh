@@ -28,7 +28,8 @@ else
 fi
 
 # strict single-line "key = "value"" TOML, from stdin
-toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p"; }
+# unescapes \" and \\ in the value
+toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p" | sed 's/\\\(.\)/\1/g'; }
 
 # newest ladybird sha: local input first, curl to refresh
 db_latest() {
