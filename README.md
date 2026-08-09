@@ -127,9 +127,11 @@ Until you pick a version the shell shows none:
 
 `lbenv switch <hash>`
   Pick a recorded version by its Ladybird commit hash; a unique prefix is
-  enough. A recorded entry freezes the whole environment bit-identically
-  — flake revision, toolchain, dependencies, overrides, plus the exact Ladybird
-  source and nixpkgs.
+  enough. A recorded entry pins the whole environment — flake revision,
+  toolchain, dependencies, overrides, plus the exact Ladybird source and
+  nixpkgs — so it rebuilds deterministically. The recorded flake revision is
+  the lbenv HEAD at the time the entry was written; it is not independently
+  verified to build that Ladybird commit.
 
 `lbenv dev`
   Develop on top of the newest recorded version. Checks out that commit on a
