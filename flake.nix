@@ -196,10 +196,10 @@
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvm.clang llvm.lld lbenv pkgs.libtommath ]
+            ++ [ llvm.clang llvm.lld lbenv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
-              curlFull.dev fast-float ffmpegPinned.dev fmt fmt.dev fontconfig.dev
+              curlFull.dev fast-float ffmpegPinned.dev fmt.dev fontconfig.dev
               libavifPinned.dev libjxl.dev opensslPinned.dev sdl3Pinned.dev simdutf brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
