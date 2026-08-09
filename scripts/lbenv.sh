@@ -83,10 +83,19 @@ ensure_worktree() {
 
 # .envrc so an IDE (via direnv) auto-loads this exact devShell on open
 write_envrc() {
-  local dir="$1"
+  local dir="$1" lbrev="${2:-}" npkgs="${3:-}" ref
   [ -n "${LBENV_NO_ENVRC:-}" ] && return 0
   [ -f "$dir/.envrc" ] && return 0
-  printf 'use flake github:%s\n' "$FLAKE_REPO" > "$dir/.envrc"
+  # pin the flake rev + nixpkgs so a direnv reload reproduces this exact env,
+  # not whatever floating HEAD happens to be current
+  ref="github:$FLAKE_REPO"
+  [ -n "$lbrev" ] && ref="github:$FLAKE_REPO/$lbrev"
+  if [ -n "$npkgs" ]; then
+    printf 'use flake %s --override-input nixpkgs github:NixOS/nixpkgs/%s\n' \
+      "$ref" "$npkgs" > "$dir/.envrc"
+  else
+    printf 'use flake %s\n' "$ref" > "$dir/.envrc"
+  fi
   command -v direnv >/dev/null 2>&1 && direnv allow "$dir" >/dev/null 2>&1 || true
 }
 
@@ -120,7 +129,7 @@ freeze_sha() {
   export LBENV_VCPKG="${vcpkg:--}"
   export LBENV_WHEN="${date}${time:+ $time}"
   dir=$(ensure_worktree "$lh" "$branch")
-  write_envrc "$dir"
+  write_envrc "$dir" "$lbrev" "$npkgs"
   cd "$dir" || exit 1
 
   local dev=()
