@@ -105,7 +105,15 @@
             hash = "sha256-Yg40aPrsLqhoXTLEalhGm4UO9jBAs1Zc3gWVmCW0gic=";
           };
           patches = [];
-          mesonFlags = builtins.filter (f: !(pkgs.lib.hasInfix "raster" f)) prev.mesonFlags;
+          # drop the exact flag, not a fragile hasInfix "raster"; throw if it is
+          # gone (renamed upstream) instead of silently filtering nothing
+          mesonFlags =
+            let
+              drop = "-Draster=disabled";
+              kept = builtins.filter (f: f != drop) prev.mesonFlags;
+            in if kept == prev.mesonFlags
+               then throw "harfbuzz: expected meson flag '${drop}' not found — renamed upstream?"
+               else kept;
         });
 
         libxml2Pinned = pkgs.libxml2.overrideAttrs (_: rec {
