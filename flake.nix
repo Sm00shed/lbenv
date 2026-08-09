@@ -57,8 +57,7 @@
           '';
         };
 
-        # pin to a concrete chromium commit; 'main' is a moving ref and drifts
-        # away from the fixed hash, breaking the build on any cache-cold machine
+        # pin to a concrete chromium commit; 'main' drifts off the fixed hash
         hstsPreload = pkgs.fetchurl {
           url  = "https://raw.githubusercontent.com/chromium/chromium/7be0edc636b0e7b0143e2700ecf5c8af750d09ec/net/http/transport_security_state_static.json";
           hash = "sha256-ObT9lWtjw/V0UGY552pEWJ6KbfF0izB/zJ7v+00IFB8=";
@@ -87,8 +86,7 @@
             url  = "https://sqlite.org/2026/sqlite-src-3520000.zip";
             hash = "sha256-ZSqYyoM+1jiAmlK+wiWn83eZ9xqZV3j5zLaK0DvR/BE=";
           };
-          # nixpkgs' sqlite patches target the packaged version; they may not
-          # apply to 3.52.0. Clear them, like the other version-bumped pins.
+          # clear nixpkgs patches; they may not apply to 3.52.0
           patches = [];
         });
 
@@ -105,8 +103,7 @@
             hash = "sha256-Yg40aPrsLqhoXTLEalhGm4UO9jBAs1Zc3gWVmCW0gic=";
           };
           patches = [];
-          # drop the exact flag, not a fragile hasInfix "raster"; throw if it is
-          # gone (renamed upstream) instead of silently filtering nothing
+          # drop the exact flag; throw if it's gone (renamed upstream)
           mesonFlags =
             let
               drop = "-Draster=disabled";
@@ -228,14 +225,11 @@
             _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
 
             LADYBIRD_SRC_DIR="$PWD"
-            # CA cert into the tree — only exists inside a ladybird worktree, so
-            # export the path only when we actually created it (else it would
-            # point at a non-existent file)
+            # CA cert only exists in a ladybird worktree; export only when created
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
               cp --no-preserve=mode ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
                  "$PWD/Caches/CACERT/ca-bundle.crt"
-              # per-worktree, not an inherited path
               export LADYBIRD_CERTIFICATE="$PWD/Caches/CACERT/ca-bundle.crt"
             fi
             unset VCPKG_ROOT
@@ -245,8 +239,7 @@
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
-            # scope LD_LIBRARY_PATH to running Ladybird only; setting it shell-wide
-            # makes unrelated tools pick up these libs
+            # scope LD_LIBRARY_PATH to Ladybird, not the whole shell
             Ladybird() {
               local args=()
               [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
@@ -262,8 +255,7 @@
                 mkdir -p "$PWD/Caches/HSTSPreload"
                 cp --no-preserve=mode ${hstsPreload} "$PWD/Caches/HSTSPreload/transport_security_state_static.json"
               fi
-              # refill on version mismatch, not just when missing — otherwise a
-              # nixpkgs bump leaves stale Unicode data forever
+              # refill when the cached version differs
               if [ "$(cat "$PWD/Caches/UCD/version.txt" 2>/dev/null || true)" != '${pkgs.unicode-character-database.version}' ]; then
                 rm -rf "$PWD/Caches/UCD"
                 mkdir -p "$PWD/Caches/UCD"

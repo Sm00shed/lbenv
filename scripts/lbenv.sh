@@ -15,9 +15,7 @@ FLAKE_REPO="Sm00shed/lbenv"
 DB_REPO="Sm00shed/lbenv-db"
 DB_DIR="@DB_DIR@"   # flake input checkout, always present (offline)
 
-# local clone only when explicitly opted in via LADYBIRD_FLAKE_DIR — no
-# PWD-based default, which could pick up a foreign sibling repo named 'lbenv'.
-# Verify the dir actually holds THIS flake before trusting it.
+# opt-in local flake via LADYBIRD_FLAKE_DIR; verify it's actually ours
 FLAKE_DIR="${LADYBIRD_FLAKE_DIR:-}"
 if [ -n "$FLAKE_DIR" ] && [ -f "$FLAKE_DIR/flake.nix" ] \
    && grep -q "Ladybird browser development environment" "$FLAKE_DIR/flake.nix" 2>/dev/null; then
@@ -68,12 +66,10 @@ ensure_worktree() {
   src=$(main_src); dir="$(wt_root)/$lh"
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
-  # drop registrations whose worktree dir was removed by hand (rm -rf), else
-  # 'worktree add' aborts with "already registered"
+  # clear worktrees removed by hand, else 'add' says already registered
   git -C "$src" worktree prune >/dev/null 2>&1 || true
   if [ ! -e "$dir" ]; then
-    # ensure the commit is present; report clearly instead of letting a later
-    # "invalid reference" surface a swallowed fetch failure
+    # fetch the commit if missing; fail loudly if still absent
     if ! git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null; then
       git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
         || git -C "$src" fetch --quiet origin 2>/dev/null || true
@@ -91,9 +87,7 @@ ensure_worktree() {
       git -C "$src" worktree add --quiet --detach "$dir" "$lh" >&2
     fi
   else
-    # a reused detached worktree must actually sit on the requested commit,
-    # otherwise a stale checkout would be used silently. A branch worktree is
-    # allowed to be ahead of the recorded sha (see 'dev').
+    # reused detached worktree must sit on the requested commit
     if [ -z "$branch" ]; then
       have="$(git -C "$dir" rev-parse HEAD 2>/dev/null || true)"
       want="$(git -C "$src" rev-parse "$lh^{commit}" 2>/dev/null || true)"
@@ -110,8 +104,7 @@ write_envrc() {
   local dir="$1" lbrev="${2:-}" npkgs="${3:-}" ref
   [ -n "${LBENV_NO_ENVRC:-}" ] && return 0
   [ -f "$dir/.envrc" ] && return 0
-  # pin the flake rev + nixpkgs so a direnv reload reproduces this exact env,
-  # not whatever floating HEAD happens to be current
+  # pin flake rev + nixpkgs so a direnv reload reproduces this exact env
   ref="github:$FLAKE_REPO"
   [ -n "$lbrev" ] && ref="github:$FLAKE_REPO/$lbrev"
   if [ -n "$npkgs" ]; then
@@ -155,8 +148,7 @@ freeze_sha() {
   dir=$(ensure_worktree "$lh" "$branch")
   write_envrc "$dir" "$lbrev" "$npkgs"
   cd "$dir" || exit 1
-  # banner must show the worktree's real HEAD: a reused dev branch can be ahead
-  # of the recorded sha, so the displayed commit would otherwise be wrong
+  # banner shows the real HEAD (a dev branch may be ahead of the recorded sha)
   head="$(git rev-parse HEAD 2>/dev/null || true)"
   [ -n "$head" ] && export LBENV_LADYBIRD="$head"
 
@@ -210,8 +202,7 @@ case "${1:-}" in
     # exact sha file, else prefix match against local db; else curl fallback in freeze_sha
     sha="$key"
     if [ ! -f "$DB_DIR/$key.toml" ]; then
-      # glob-based prefix match (no regex injection from $key); ambiguity is an
-      # error, not a silent alphabetical pick
+      # glob prefix match; ambiguity is an error, not a silent pick
       matches=()
       shopt -s nullglob
       for m in "$DB_DIR/$key"*.toml; do matches+=("$(basename "$m" .toml)"); done
