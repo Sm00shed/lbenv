@@ -125,12 +125,17 @@ Until you pick a version the shell shows none:
 `lbenv`
   Enter the newest recorded version.
 
-`lbenv switch [hash]`
-  Pick a recorded version. Without an argument it opens a picker (fzf; each
-  commit as title / date / hash, newest first), or prints the same blocks when
-  fzf is missing. A recorded entry freezes the whole environment bit-identically
+`lbenv switch <hash>`
+  Pick a recorded version by its Ladybird commit hash; a unique prefix is
+  enough. A recorded entry freezes the whole environment bit-identically
   — flake revision, toolchain, dependencies, overrides, plus the exact Ladybird
   source and nixpkgs.
+
+`lbenv dev`
+  Develop on top of the newest recorded version. Checks out that commit on a
+  fresh `lbenv-dev/<hash>` branch so you can commit onto it, while inheriting
+  the recorded entry's frozen nixpkgs and lbenv pin. The banner then shows the
+  branch's real HEAD, which may be ahead of the recorded commit.
 
 `lbenv new [hash]`
   Floating placeholder on a commit not in lbenv-db yet (default: upstream
@@ -151,7 +156,7 @@ Once selected, the banner shows the commit and the environment:
          flake    5e6c3378
          dir      ~/lbenv-wt/12176d08…
 
-       Reproduce: nix develop github:Sm00shed/lbenv/5e6c3378
+       Reproduce: lbenv switch 12176d08207fb7cb8e8e0b87521ed3468cf8ee40
 
 The `Reproduce` line rebuilds the exact environment on any machine. When filing a
 bug, include the commit hash from the banner. You can also pin the flake
