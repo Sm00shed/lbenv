@@ -200,9 +200,18 @@ case "${1:-}" in
     # exact sha file, else prefix match against local db; else curl fallback in freeze_sha
     sha="$key"
     if [ ! -f "$DB_DIR/$key.toml" ]; then
-      match=$(cd "$DB_DIR" && ls -1 ./*.toml 2>/dev/null \
-        | sed 's,^\./,,; s,\.toml$,,' | grep -E "^$key" | head -n1 || true)
-      [ -n "$match" ] && sha="$match"
+      # glob-based prefix match (no regex injection from $key); ambiguity is an
+      # error, not a silent alphabetical pick
+      matches=()
+      shopt -s nullglob
+      for m in "$DB_DIR/$key"*.toml; do matches+=("$(basename "$m" .toml)"); done
+      shopt -u nullglob
+      case ${#matches[@]} in
+        0) : ;;  # nothing local — leave sha=key for freeze_sha's curl fallback
+        1) sha="${matches[0]}" ;;
+        *) { echo "ambiguous prefix '$key' matches:"; printf '  %s\n' "${matches[@]}"; } >&2
+           exit 1 ;;
+      esac
     fi
     freeze_sha "$sha"
     ;;
