@@ -57,9 +57,11 @@
           '';
         };
 
+        # pin to a concrete chromium commit; 'main' is a moving ref and drifts
+        # away from the fixed hash, breaking the build on any cache-cold machine
         hstsPreload = pkgs.fetchurl {
-          url  = "https://raw.githubusercontent.com/chromium/chromium/main/net/http/transport_security_state_static.json";
-          hash = "sha256-YuiotSk0Lf3IHz/UjgCmU/brdB1lszob6DN4DXyjiWU=";
+          url  = "https://raw.githubusercontent.com/chromium/chromium/7be0edc636b0e7b0143e2700ecf5c8af750d09ec/net/http/transport_security_state_static.json";
+          hash = "sha256-ObT9lWtjw/V0UGY552pEWJ6KbfF0izB/zJ7v+00IFB8=";
         };
 
         ladybirdSkia = pkgs.skia.overrideAttrs (prev: {
