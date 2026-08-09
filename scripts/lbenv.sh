@@ -29,13 +29,10 @@ fi
 # unescapes \" and \\ in the value
 toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p" | sed 's/\\\(.\)/\1/g'; }
 
-# newest ladybird sha: local input first, curl to refresh
+# newest ladybird sha: live first, pinned input only as offline fallback
 db_latest() {
-  if [ -f "$DB_DIR/latest" ]; then
-    cat "$DB_DIR/latest"
-  else
-    curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest"
-  fi
+  curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest" 2>/dev/null \
+    || cat "$DB_DIR/latest"
 }
 
 # one commit's TOML to stdout: local input first, curl fallback
