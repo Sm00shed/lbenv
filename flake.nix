@@ -219,15 +219,17 @@
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
             _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
 
-            # CA cert into the tree
+            LADYBIRD_SRC_DIR="$PWD"
+            # CA cert into the tree — only exists inside a ladybird worktree, so
+            # export the path only when we actually created it (else it would
+            # point at a non-existent file)
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
               cp --no-preserve=mode ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
                  "$PWD/Caches/CACERT/ca-bundle.crt"
+              # per-worktree, not an inherited path
+              export LADYBIRD_CERTIFICATE="$PWD/Caches/CACERT/ca-bundle.crt"
             fi
-            LADYBIRD_SRC_DIR="$PWD"
-            # per-worktree, not an inherited path
-            export LADYBIRD_CERTIFICATE="$PWD/Caches/CACERT/ca-bundle.crt"
             unset VCPKG_ROOT
             unset CMAKE_TOOLCHAIN_FILE
 
@@ -236,7 +238,11 @@
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
-            Ladybird() { "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" --certificate="$LADYBIRD_CERTIFICATE" "$@"; }
+            Ladybird() {
+              local args=()
+              [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
+              "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
+            }
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
