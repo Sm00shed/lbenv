@@ -64,9 +64,14 @@ ensure_worktree() {
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
   if [ ! -e "$dir" ]; then
-    git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
-      || git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
-      || git -C "$src" fetch --quiet origin || true
+    # ensure the commit is present; report clearly instead of letting a later
+    # "invalid reference" surface a swallowed fetch failure
+    if ! git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null; then
+      git -C "$src" fetch --quiet origin "$lh" 2>/dev/null \
+        || git -C "$src" fetch --quiet origin 2>/dev/null || true
+      git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
+        || { echo "cannot find ladybird commit $lh (fetch failed or unknown sha)" >&2; exit 1; }
+    fi
     if [ -n "$branch" ]; then
       # reuse branch if it already exists, else create it at the target sha
       if git -C "$src" show-ref --verify --quiet "refs/heads/$branch"; then
