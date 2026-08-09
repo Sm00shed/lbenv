@@ -15,11 +15,15 @@ FLAKE_REPO="Sm00shed/lbenv"
 DB_REPO="Sm00shed/lbenv-db"
 DB_DIR="@DB_DIR@"   # flake input checkout, always present (offline)
 
-# local clone if present
-FLAKE_DIR="${LADYBIRD_FLAKE_DIR:-$PWD/../lbenv}"
-if [ -d "$FLAKE_DIR/.git" ]; then
+# local clone only when explicitly opted in via LADYBIRD_FLAKE_DIR — no
+# PWD-based default, which could pick up a foreign sibling repo named 'lbenv'.
+# Verify the dir actually holds THIS flake before trusting it.
+FLAKE_DIR="${LADYBIRD_FLAKE_DIR:-}"
+if [ -n "$FLAKE_DIR" ] && [ -f "$FLAKE_DIR/flake.nix" ] \
+   && grep -q "Ladybird browser development environment" "$FLAKE_DIR/flake.nix" 2>/dev/null; then
   FLAKE_REF="$FLAKE_DIR"; LOCAL=1
 else
+  [ -n "$FLAKE_DIR" ] && echo "warning: $FLAKE_DIR is not the lbenv flake — using github:$FLAKE_REPO" >&2
   FLAKE_REF="github:$FLAKE_REPO"; LOCAL=0
 fi
 
