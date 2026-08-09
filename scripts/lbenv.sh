@@ -59,10 +59,13 @@ main_src() { echo "${LADYBIRD_SRC:-$HOME/ladybird}"; }
 # worktree for a ladybird rev, one dir per hash; prints its path.
 # $2 optional branch name: create/checkout that branch instead of detaching.
 ensure_worktree() {
-  local lh="$1" branch="${2:-}" src dir
+  local lh="$1" branch="${2:-}" src dir have want
   src=$(main_src); dir="$(wt_root)/$lh"
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
+  # drop registrations whose worktree dir was removed by hand (rm -rf), else
+  # 'worktree add' aborts with "already registered"
+  git -C "$src" worktree prune >/dev/null 2>&1 || true
   if [ ! -e "$dir" ]; then
     # ensure the commit is present; report clearly instead of letting a later
     # "invalid reference" surface a swallowed fetch failure
@@ -81,6 +84,17 @@ ensure_worktree() {
       fi
     else
       git -C "$src" worktree add --quiet --detach "$dir" "$lh" >&2
+    fi
+  else
+    # a reused detached worktree must actually sit on the requested commit,
+    # otherwise a stale checkout would be used silently. A branch worktree is
+    # allowed to be ahead of the recorded sha (see 'dev').
+    if [ -z "$branch" ]; then
+      have="$(git -C "$dir" rev-parse HEAD 2>/dev/null || true)"
+      want="$(git -C "$src" rev-parse "$lh^{commit}" 2>/dev/null || true)"
+      if [ -n "$have" ] && [ -n "$want" ] && [ "$have" != "$want" ]; then
+        echo "warning: worktree $dir is at ${have:0:8}, not ${lh:0:8}" >&2
+      fi
     fi
   fi
   echo "$dir"
