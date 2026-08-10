@@ -14,13 +14,13 @@
     };
 
     # version database: one <ladybird-sha>.toml per commit, plus `latest`
-    lbenv-db = {
-      url = "github:Sm00shed/lbenv-db";
+    lbdb = {
+      url = "github:Sm00shed/lbdb";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ladybird, lbenv-db }:
+  outputs = { self, nixpkgs, flake-utils, ladybird, lbdb }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -182,7 +182,7 @@
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
             [ "@BINPATH@" "@DB_DIR@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils ])}" "${lbenv-db}" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils ])}" "${lbdb}" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 
