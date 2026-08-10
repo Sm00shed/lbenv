@@ -35,19 +35,19 @@
         "type": "github"
       }
     },
-    "lbenv-db": {
+    "lbdb": {
       "flake": false,
       "locked": {
-        "lastModified": 1786126102,
-        "narHash": "sha256-WO/fv8g/ca3bmdxY5a4P2m9dnEJy9f3e3lideNtPdxk=",
+        "lastModified": 1786378350,
+        "narHash": "sha256-WWuJa4AkdkgosYbXbm0EYUAGbyPUsKDBqDrVpuOI1Ts=",
         "owner": "Sm00shed",
-        "repo": "lbenv-db",
-        "rev": "e460354fac31147763b065747ff8e4299542d640",
+        "repo": "lbdb",
+        "rev": "d9305e4c89938f0609f13e8e6a896e2f04ba168e",
         "type": "github"
       },
       "original": {
         "owner": "Sm00shed",
-        "repo": "lbenv-db",
+        "repo": "lbdb",
         "type": "github"
       }
     },
@@ -71,7 +71,7 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "ladybird": "ladybird",
-        "lbenv-db": "lbenv-db",
+        "lbdb": "lbdb",
         "nixpkgs": "nixpkgs"
       }
     },
