@@ -12,7 +12,7 @@ unset LADYBIRD_CERTIFICATE
 
 REPO="LadybirdBrowser/ladybird"
 FLAKE_REPO="Sm00shed/lbenv"
-DB_REPO="Sm00shed/lbenv-db"
+DB_REPO="Sm00shed/lbdb"
 DB_DIR="@DB_DIR@"   # flake input checkout, always present (offline)
 
 # opt-in local flake via LADYBIRD_FLAKE_DIR; verify it's actually ours
