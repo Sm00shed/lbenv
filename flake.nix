@@ -154,7 +154,7 @@
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
           fmt simdutf simdjson libtommath libpsl libedit cpptrace
           libdrm vulkan-loader vulkan-memory-allocator
-          libGL libpulseaudio qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
+          libGL libpulseaudio glib qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
         ];
 
