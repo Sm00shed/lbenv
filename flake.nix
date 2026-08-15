@@ -205,7 +205,7 @@
               dejavu_fonts liberation_ttf cacert
               patchelf glslang
               libdrm.dev vulkan-headers vulkan-loader.dev
-              libGL.dev libpulseaudio.dev glib.dev sysprof
+              libGL.dev libpulseaudio.dev glib.dev sysprof.dev
               qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
             ]);
 
