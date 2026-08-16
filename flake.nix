@@ -148,6 +148,9 @@
         # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
 
+        # software Vulkan (lavapipe) ICD from mesa, fully in-store
+        lavapipeIcd = "${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
+
         libPkgs = with pkgs; [
           curlFull ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib libhwy lcms2 zstd libidn2 woff2.lib icu78
@@ -242,8 +245,39 @@
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
+            # renderer cpu | lavapipe (SW) | vulkan (HW); default in .lbenv.conf,
+            # overridable via LB_RENDER or Ladybird <mode>
+            _lb_conf="$LADYBIRD_SRC_DIR/.lbenv.conf"
+            _lb_render_default=cpu
+            [ -f "$_lb_conf" ] && _lb_render_default=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$_lb_conf" | tail -n1)
+            export LB_RENDER="''${LB_RENDER:-''${_lb_render_default:-cpu}}"
+            _lb_render_env() {
+              unset VK_DRIVER_FILES VK_ICD_FILENAMES
+              LB_RENDER_ARGS=()
+              case "$1" in
+                lavapipe)
+                  export VK_DRIVER_FILES="${lavapipeIcd}" VK_ICD_FILENAMES="${lavapipeIcd}" ;;
+                vulkan)
+                  if compgen -G '/usr/share/vulkan/icd.d/*.json' >/dev/null; then
+                    local h; h="$(echo /usr/share/vulkan/icd.d/*.json | tr ' ' ':')"
+                    export VK_DRIVER_FILES="$h" VK_ICD_FILENAMES="$h"
+                  else echo "render vulkan: no host ICD in /usr/share/vulkan/icd.d — use nixGL or lavapipe" >&2; fi ;;
+                cpu) LB_RENDER_ARGS=(--force-cpu-painting) ;;
+                *) echo "render: unknown mode '$1' (vulkan|lavapipe|cpu)" >&2; return 1 ;;
+              esac
+            }
+            render() {   # set the persistent default in .lbenv.conf
+              _lb_render_env "$1" || return 1
+              export LB_RENDER="$1"
+              { grep -v '^render[[:space:]]*=' "$_lb_conf" 2>/dev/null; echo "render = $1"; } \
+                > "$_lb_conf.tmp" && mv "$_lb_conf.tmp" "$_lb_conf"
+              echo "default renderer: $1"
+            }
             Ladybird() {
-              local args=()
+              local mode="$LB_RENDER"
+              case "''${1:-}" in vulkan|lavapipe|cpu) mode="$1"; shift ;; esac
+              _lb_render_env "$mode"
+              local args=("''${LB_RENDER_ARGS[@]}")
               [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
               "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
             }
