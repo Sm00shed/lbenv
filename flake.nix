@@ -148,8 +148,9 @@
         # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
 
-        # software Vulkan (lavapipe) ICD from mesa, fully in-store
-        lavapipeIcd = "${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
+        # in-store mesa Vulkan ICDs; HW drivers (radeon/intel/…) and lavapipe (SW)
+        mesaIcdDir = "${pkgs.mesa}/share/vulkan/icd.d";
+        lavapipeIcd = "${mesaIcdDir}/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
 
         libPkgs = with pkgs; [
           curlFull ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
@@ -258,12 +259,15 @@
                 lavapipe)
                   export VK_DRIVER_FILES="${lavapipeIcd}" VK_ICD_FILENAMES="${lavapipeIcd}" ;;
                 vulkan)
-                  if compgen -G '/usr/share/vulkan/icd.d/*.json' >/dev/null; then
-                    local h; h="$(echo /usr/share/vulkan/icd.d/*.json | tr ' ' ':')"
-                    export VK_DRIVER_FILES="$h" VK_ICD_FILENAMES="$h"
-                  else echo "render vulkan: no host ICD in /usr/share/vulkan/icd.d — use nixGL or lavapipe" >&2; fi ;;
+                  # all in-store mesa HW drivers, minus lavapipe; loader picks the present GPU
+                  local icds; icds=$(ls "${mesaIcdDir}"/*_icd.*.json 2>/dev/null | grep -v lvp_icd | paste -sd:)
+                  [ -n "$icds" ] || { echo "render vulkan: no mesa HW ICDs found" >&2; return 1; }
+                  export VK_DRIVER_FILES="$icds" VK_ICD_FILENAMES="$icds" ;;
+                nvidia)
+                  echo "render nvidia: placeholder — proprietary NVIDIA needs nixVulkanNvidia (impure), not implemented" >&2
+                  return 1 ;;
                 cpu) LB_RENDER_ARGS=(--force-cpu-painting) ;;
-                *) echo "render: unknown mode '$1' (vulkan|lavapipe|cpu)" >&2; return 1 ;;
+                *) echo "render: unknown mode '$1' (vulkan|nvidia|lavapipe|cpu)" >&2; return 1 ;;
               esac
             }
             render() {   # set the persistent default in .lbenv.conf
@@ -275,8 +279,8 @@
             }
             Ladybird() {
               local mode="$LB_RENDER"
-              case "''${1:-}" in vulkan|lavapipe|cpu) mode="$1"; shift ;; esac
-              _lb_render_env "$mode"
+              case "''${1:-}" in vulkan|nvidia|lavapipe|cpu) mode="$1"; shift ;; esac
+              _lb_render_env "$mode" || return 1
               local args=("''${LB_RENDER_ARGS[@]}")
               [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
               "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
