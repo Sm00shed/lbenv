@@ -150,9 +150,10 @@
         fmtPinned = pkgsU.fmt;                              # 12.2.0
         libhwyPinned = pkgsU.libhwy;                        # 1.4.0
         fastFloatPinned = pkgsU.fast-float;                 # 8.2.10
-        vmaPinned = pkgsU.vulkan-memory-allocator;          # 3.4.0
-        # vcpkg 1.4.350, unstable 1.4.357, additive only
-        vulkanHeadersPinned = pkgsU.vulkan-headers;
+        # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
+        # gives -9 (INCOMPATIBLE_DRIVER); keep the whole stack on stable
+        vmaPinned = pkgs.vulkan-memory-allocator;           # 3.3.0
+        vulkanHeadersPinned = pkgs.vulkan-headers;          # 1.4.341, matches loader + mesa
 
         # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
