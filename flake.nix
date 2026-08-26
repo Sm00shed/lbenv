@@ -173,7 +173,7 @@
 
         cmakePrefixParts = with pkgs; [
           icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev fmtPinned.dev
-          fontconfig.dev libavifPinned.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
+          fontconfig.dev expat.dev libavifPinned.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
           woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
           mimalloc227.dev
@@ -209,7 +209,7 @@
             ++ [ llvm.clang llvm.lld lbenv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
-              curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev
+              curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev libjxl.dev opensslPinned.dev sdl3Pinned.dev simdutf brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
