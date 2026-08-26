@@ -181,7 +181,7 @@
           cpptrace
           libtommath
           vulkan-loader.dev vulkanHeadersPinned vmaPinned
-          libpulseaudio.dev libGL.dev
+          libpulseaudio.dev libGL.dev libsysprof-capture
           qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
         ];
 
@@ -218,7 +218,7 @@
               dejavu_fonts liberation_ttf cacert
               patchelf glslang
               libdrm.dev vulkanHeadersPinned vulkan-loader.dev
-              libGL.dev libpulseaudio.dev glib.dev sysprof.dev
+              libGL.dev libpulseaudio.dev glib.dev libsysprof-capture
               qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
             ]);
 
