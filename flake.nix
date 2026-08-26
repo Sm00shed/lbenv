@@ -5,6 +5,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
+    # libs where 26.05 lags Ladybird's vcpkg pins
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
     flake-utils.url = "github:numtide/flake-utils";
 
     # lbenv overrides this at runtime
@@ -20,10 +23,17 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ladybird, lbdb }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ladybird, lbdb }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = import nixpkgs {
+          inherit system;
+          config = { };
+          overlays = [ ];
+        };
+
+        # unstable, only for the libs 26.05 is behind on
+        pkgsU = import nixpkgs-unstable {
           inherit system;
           config = { };
           overlays = [ ];
@@ -78,19 +88,22 @@
 
         ffmpegPinned = pkgs.ffmpeg_7;
 
-        opensslPinned = pkgs.openssl_3_5;
+        # vcpkg 3.6.3
+        opensslPinned = pkgsU.openssl;
 
-        sqlitePinned = pkgs.sqlite.overrideAttrs (_: rec {
-          version = "3.52.0";
-          src = pkgs.fetchurl {
-            url  = "https://sqlite.org/2026/sqlite-src-3520000.zip";
-            hash = "sha256-ZSqYyoM+1jiAmlK+wiWn83eZ9xqZV3j5zLaK0DvR/BE=";
+        # vcpkg 3.53.3
+        sqlitePinned = pkgsU.sqlite;
+
+        # vcpkg 3.2.0, not in nixpkgs yet
+        libjpegTurboPinned = pkgs.libjpeg_turbo.overrideAttrs (_: rec {
+          version = "3.2.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "libjpeg-turbo";
+            repo  = "libjpeg-turbo";
+            rev   = version;
+            hash  = "sha256-SPxWCDt9hFQ8uRaaKLkpWp9oPhfcRkDBm5MarTgdmV4=";
           };
-          # clear nixpkgs patches; they may not apply to 3.52.0
-          patches = [];
         });
-
-        libjpegTurboPinned = pkgs.libjpeg_turbo;
 
         libpngPinned = pkgs.libpng;
 
@@ -113,14 +126,8 @@
                else kept;
         });
 
-        libxml2Pinned = pkgs.libxml2.overrideAttrs (_: rec {
-          version = "2.13.8";
-          src = pkgs.fetchurl {
-            url  = "mirror://gnome/sources/libxml2/${pkgs.lib.versions.majorMinor version}/libxml2-${version}.tar.xz";
-            hash = "sha256-J3KUyzMRmrcbK8gfL0Rem8lDW4k60VuyzSsOhZoO6Eo=";
-          };
-          patches = [];
-        });
+        # vcpkg 2.15.3
+        libxml2Pinned = pkgsU.libxml2;
 
         freetypePinned = pkgs.freetype;
 
@@ -135,15 +142,17 @@
           };
         });
 
-        libavifPinned = pkgs.libavif.overrideAttrs (_: rec {
-          version = "1.4.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "AOMediaCodec";
-            repo  = "libavif";
-            rev   = "v${version}";
-            hash  = "sha256-035SoxHfN121mp3LGwGykReCi1WJbl2/nZH8c/VwABU=";
-          };
-        });
+        # vcpkg 1.4.2
+        libavifPinned = pkgsU.libavif;
+
+        # these match the vcpkg pin exactly
+        curlPinned = pkgsU.curlFull;                        # 8.21.0
+        fmtPinned = pkgsU.fmt;                              # 12.2.0
+        libhwyPinned = pkgsU.libhwy;                        # 1.4.0
+        fastFloatPinned = pkgsU.fast-float;                 # 8.2.10
+        vmaPinned = pkgsU.vulkan-memory-allocator;          # 3.4.0
+        # vcpkg 1.4.350, unstable 1.4.357, additive only
+        vulkanHeadersPinned = pkgsU.vulkan-headers;
 
         # angle on clang 20
         ladybirdAngle = pkgs.angle.override { stdenv = pkgs.llvmPackages_20.stdenv; };
@@ -153,17 +162,17 @@
         lavapipeIcd = "${mesaIcdDir}/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
 
         libPkgs = with pkgs; [
-          curlFull ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
-          opensslPinned sdl3Pinned brotli.lib libhwy lcms2 zstd libidn2 woff2.lib icu78
+          curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
+          opensslPinned sdl3Pinned brotli.lib libhwyPinned lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmt simdutf simdjson libtommath libpsl libedit cpptrace
-          libdrm vulkan-loader vulkan-memory-allocator
+          fmtPinned simdutf simdjson libtommath libpsl libedit cpptrace
+          libdrm vulkan-loader vmaPinned
           libGL libpulseaudio glib libxkbcommon qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
         ];
 
         cmakePrefixParts = with pkgs; [
-          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlFull.dev sdl3Pinned.dev fmt.dev
+          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev fmtPinned.dev
           fontconfig.dev libavifPinned.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
           woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
@@ -171,7 +180,7 @@
           # symbolized stacktraces
           cpptrace
           libtommath
-          vulkan-loader.dev vulkan-headers vulkan-memory-allocator
+          vulkan-loader.dev vulkanHeadersPinned vmaPinned
           libpulseaudio.dev libGL.dev
           qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
         ];
@@ -200,7 +209,7 @@
             ++ [ llvm.clang llvm.lld lbenv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
-              curlFull.dev fast-float ffmpegPinned.dev fmt.dev fontconfig.dev
+              curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev
               libavifPinned.dev libjxl.dev opensslPinned.dev sdl3Pinned.dev simdutf brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
@@ -208,7 +217,7 @@
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
               dejavu_fonts liberation_ttf cacert
               patchelf glslang
-              libdrm.dev vulkan-headers vulkan-loader.dev
+              libdrm.dev vulkanHeadersPinned vulkan-loader.dev
               libGL.dev libpulseaudio.dev glib.dev sysprof.dev
               qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
             ]);
