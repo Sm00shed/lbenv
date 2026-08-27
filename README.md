@@ -7,7 +7,7 @@ Ladybird's own dependency fetcher is never used.
 
 Tested scope: on Linux x86_64 (NixOS and CachyOS) the browser builds and runs.
 
-Versions live in the `Sm00shed/lbenv-db` repository: one `<sha>.toml` per
+Versions live in the `Sm00shed/lbdb` repository: one `<sha>.toml` per
 Ladybird commit, with `latest` naming the newest. No version is active until you
 pick one with `lbenv` — see [Source version management](#source-version-management).
 
@@ -110,7 +110,7 @@ LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird
 
 ## Source version management
 
-Ladybird versions are recorded in the `Sm00shed/lbenv-db` repository (one TOML
+Ladybird versions are recorded in the `Sm00shed/lbdb` repository (one TOML
 per commit, maintained by a CI job every few minutes). The picker, the list and
 the banner are all derived from it.
 
@@ -140,7 +140,7 @@ Until you pick a version the shell shows none:
   branch's real HEAD, which may be ahead of the recorded commit.
 
 `lbenv new [hash]`
-  Floating placeholder on a commit not in lbenv-db yet (default: upstream
+  Floating placeholder on a commit not in lbdb yet (default: upstream
   HEAD). No frozen flake revision.
 
 Once selected, the banner shows the commit and the environment:
@@ -174,7 +174,7 @@ touches another version; jump back to a built one and it is ready instantly. The
 worktrees share one clone (`~/ladybird`) for git objects. Set `LADYBIRD_SRC` /
 `LBENV_WT` to relocate the clone or the worktree root.
 
-`lbenv` reads the database from the `lbenv-db` flake input (works offline), with
+`lbenv` reads the database from the `lbdb` flake input (works offline), with
 curl as a fallback/refresh. `LADYBIRD_FLAKE_DIR=~/lbenv` points `lbenv` at a
 local clone of *this* flake for `nix develop`; otherwise the published flake on
 GitHub is used.

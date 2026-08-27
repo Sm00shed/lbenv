@@ -121,14 +121,14 @@ override() {
   exec nix develop "$FLAKE_REF" --quiet
 }
 
-# enter one lbenv-db entry (by ladybird sha), in its worktree.
+# enter one lbdb entry (by ladybird sha), in its worktree.
 # $2 optional: ladybird sha to check out INSTEAD of the recorded one
 #    (dev: own commit inherits the recorded pin). $3 optional branch name.
 freeze_sha() {
   local sha="$1" checkout="${2:-}" branch="${3:-}"
   local toml lh lbrev npkgs title vcpkg date time dir head
-  toml="$(db_toml "$sha")" || { echo "not in lbenv-db: $sha" >&2; exit 1; }
-  [ -n "$toml" ] || { echo "not in lbenv-db: $sha" >&2; exit 1; }
+  toml="$(db_toml "$sha")" || { echo "not in lbdb: $sha" >&2; exit 1; }
+  [ -n "$toml" ] || { echo "not in lbdb: $sha" >&2; exit 1; }
   lh="$(printf '%s\n' "$toml" | toml_get ladybird)"; lh="${lh:-$sha}"
   lbrev="$(printf '%s\n' "$toml" | toml_get lbenv)"    # build logic (flake.nix), pins overrides
   npkgs="$(printf '%s\n' "$toml" | toml_get nixpkgs)"  # nixpkgs branch floats, pin it
@@ -164,16 +164,16 @@ freeze_sha() {
 
 case "${1:-}" in
   "")
-    # newest recorded (lbenv-db `latest`)
+    # newest recorded (lbdb `latest`)
     sha=$(db_latest | tr -d '[:space:]')
-    [ -n "$sha" ] || { echo "lbenv-db: cannot read latest" >&2; exit 1; }
+    [ -n "$sha" ] || { echo "lbdb: cannot read latest" >&2; exit 1; }
     freeze_sha "$sha"
     ;;
   dev)
     # develop on top of newest recorded: own branch to commit onto,
     # but inherit that recorded entry's frozen nixpkgs/lbenv pin.
     base=$(db_latest | tr -d '[:space:]')
-    [ -n "$base" ] || { echo "lbenv-db: cannot read latest" >&2; exit 1; }
+    [ -n "$base" ] || { echo "lbdb: cannot read latest" >&2; exit 1; }
     # resolve the actual ladybird sha of `latest` for the branch name
     lh="$(db_toml "$base" | toml_get ladybird)"; lh="${lh:-$base}"
     branch="lbenv-dev/${lh:0:8}"
