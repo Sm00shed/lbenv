@@ -159,7 +159,6 @@
         # these match the vcpkg pin exactly
         curlPinned = pkgsU.curlFull;                        # 8.21.0
         fmtPinned = pkgsU.fmt;                              # 12.2.0
-        libhwyPinned = pkgsU.libhwy;                        # 1.4.0
         fastFloatPinned = pkgsU.fast-float;                 # 8.2.10
         # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
         # gives -9 (INCOMPATIBLE_DRIVER); keep the whole stack on stable
@@ -174,8 +173,8 @@
         lavapipeIcd = "${mesaIcdDir}/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
 
         libPkgs = with pkgs; [
-          curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libjxl libwebp libxcrypt
-          opensslPinned sdl3Pinned brotli.lib libhwyPinned lcms2 zstd libidn2 woff2.lib icu78
+          curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
+          opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
           fmtPinned simdutfPinned simdjson libtommath libpsl libedit cpptrace
           libdrm vulkan-loader vmaPinned
@@ -185,7 +184,7 @@
 
         cmakePrefixParts = with pkgs; [
           icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev fmtPinned.dev
-          fontconfig.dev expat.dev libavifPinned.dev libjxl.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
+          fontconfig.dev expat.dev libavifPinned.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
           woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
           mimalloc227.dev
@@ -222,7 +221,7 @@
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
-              libavifPinned.dev libjxl.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
+              libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
