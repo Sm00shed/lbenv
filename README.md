@@ -40,6 +40,13 @@ On NixOS, set it in `configuration.nix` instead and run `nixos-rebuild switch`:
 nix.settings.experimental-features = [ "nix-command" "flakes" ];
 ```
 
+### Load Nix into your shell
+
+The installer does not update your current shell. Start a new terminal, or
+source the profile once:
+
+    . ~/.nix-profile/etc/profile.d/nix.sh
+
 After this, `nix develop github:Sm00shed/lbenv` works directly.
 
 ## Quick start
