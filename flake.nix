@@ -172,6 +172,36 @@
         mesaIcdDir = "${pkgs.mesa}/share/vulkan/icd.d";
         lavapipeIcd = "${mesaIcdDir}/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
 
+        # renderer helpers as PATH programs so they survive direnv (functions don't)
+        renderCmd = pkgs.writeShellScriptBin "render" ''
+          case "''${1:-}" in
+            cpu|lavapipe|vulkan|nvidia) ;;
+            *) echo "usage: render cpu|lavapipe|vulkan|nvidia" >&2; exit 1 ;;
+          esac
+          conf="''${LADYBIRD_SRC_DIR:?}/.lbenv.conf"
+          { grep -v '^render[[:space:]]*=' "$conf" 2>/dev/null; echo "render = $1"; } \
+            > "$conf.tmp" && mv "$conf.tmp" "$conf"
+          echo "default renderer: $1"
+        '';
+        ladybirdCmd = pkgs.writeShellScriptBin "Ladybird" ''
+          conf="''${LADYBIRD_SRC_DIR:?}/.lbenv.conf"
+          mode=cpu
+          [ -f "$conf" ] && mode=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$conf" | tail -n1)
+          case "''${1:-}" in vulkan|nvidia|lavapipe|cpu) mode="$1"; shift ;; esac
+          args=()
+          case "$mode" in
+            lavapipe) export VK_DRIVER_FILES="${lavapipeIcd}" VK_ICD_FILENAMES="${lavapipeIcd}" ;;
+            vulkan)
+              icds=$(ls "${mesaIcdDir}"/*_icd.*.json 2>/dev/null | grep -v lvp_icd | paste -sd:)
+              [ -n "$icds" ] || { echo "render vulkan: no mesa HW ICDs found" >&2; exit 1; }
+              export VK_DRIVER_FILES="$icds" VK_ICD_FILENAMES="$icds" ;;
+            nvidia) echo "render nvidia: placeholder, not implemented" >&2; exit 1 ;;
+            cpu) args+=(--force-cpu-painting) ;;
+          esac
+          [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
+          exec "$LADYBIRD_SRC_DIR/''${LADYBIRD_BUILD_DIR:-Build}/bin/Ladybird" "''${args[@]}" "$@"
+        '';
+
         libPkgs = with pkgs; [
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
@@ -205,8 +235,8 @@
         # @BINPATH@ and @DB_DIR@ are substituted in at build time.
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
-            [ "@BINPATH@" "@DB_DIR@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils ])}" "${lbdb}" ]
+            [ "@BINPATH@" "@DB_DIR@" "@DIRENVRC@" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils direnv ])}" "${lbdb}" "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 
@@ -217,7 +247,7 @@
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvm.clang llvm.lld lbenv ]
+            ++ [ llvm.clang llvm.lld lbenv renderCmd ladybirdCmd ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
@@ -247,9 +277,8 @@
             ''}
             export CLANGD_PATH=${llvm.clang-unwrapped}/bin/clangd
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-            _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
 
-            LADYBIRD_SRC_DIR="$PWD"
+            export LADYBIRD_SRC_DIR="$PWD"
             # CA cert only exists in a ladybird worktree; export only when created
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
@@ -266,45 +295,6 @@
             export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
-            # renderer cpu | lavapipe (SW) | vulkan (HW); default in .lbenv.conf,
-            # overridable via LB_RENDER or Ladybird <mode>
-            _lb_conf="$LADYBIRD_SRC_DIR/.lbenv.conf"
-            _lb_render_default=cpu
-            [ -f "$_lb_conf" ] && _lb_render_default=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$_lb_conf" | tail -n1)
-            export LB_RENDER="''${LB_RENDER:-''${_lb_render_default:-cpu}}"
-            _lb_render_env() {
-              unset VK_DRIVER_FILES VK_ICD_FILENAMES
-              LB_RENDER_ARGS=()
-              case "$1" in
-                lavapipe)
-                  export VK_DRIVER_FILES="${lavapipeIcd}" VK_ICD_FILENAMES="${lavapipeIcd}" ;;
-                vulkan)
-                  # all in-store mesa HW drivers, minus lavapipe; loader picks the present GPU
-                  local icds; icds=$(ls "${mesaIcdDir}"/*_icd.*.json 2>/dev/null | grep -v lvp_icd | paste -sd:)
-                  [ -n "$icds" ] || { echo "render vulkan: no mesa HW ICDs found" >&2; return 1; }
-                  export VK_DRIVER_FILES="$icds" VK_ICD_FILENAMES="$icds" ;;
-                nvidia)
-                  echo "render nvidia: placeholder — proprietary NVIDIA needs nixVulkanNvidia (impure), not implemented" >&2
-                  return 1 ;;
-                cpu) LB_RENDER_ARGS=(--force-cpu-painting) ;;
-                *) echo "render: unknown mode '$1' (vulkan|nvidia|lavapipe|cpu)" >&2; return 1 ;;
-              esac
-            }
-            render() {   # set the persistent default in .lbenv.conf
-              _lb_render_env "$1" || return 1
-              export LB_RENDER="$1"
-              { grep -v '^render[[:space:]]*=' "$_lb_conf" 2>/dev/null; echo "render = $1"; } \
-                > "$_lb_conf.tmp" && mv "$_lb_conf.tmp" "$_lb_conf"
-              echo "default renderer: $1"
-            }
-            Ladybird() {
-              local mode="$LB_RENDER"
-              case "''${1:-}" in vulkan|nvidia|lavapipe|cpu) mode="$1"; shift ;; esac
-              _lb_render_env "$mode" || return 1
-              local args=("''${LB_RENDER_ARGS[@]}")
-              [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
-              "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
-            }
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
@@ -330,32 +320,6 @@
               fi
             fi
 
-            echo ""
-            echo "Ladybird Dev Shell"
-            echo ""
-            if [ "$_sel" = 1 ]; then
-              echo "   Commit"
-              echo "     ''${LBENV_TITLE:-(not recorded)}"
-              echo "     $LBENV_WHEN"
-              echo "     $LBENV_LADYBIRD"
-              echo ""
-              echo "   Environment"
-              echo "     nixpkgs  ${builtins.substring 0 8 nixpkgsSrc.rev}"
-              _vcpkg="''${LBENV_VCPKG:--}"; echo "     vcpkg    ''${_vcpkg:0:8}"
-              _flakeRev="''${LBENV_FLAKE_REV:-${self.rev or self.dirtyRev or ""}}"
-              [ -n "$_flakeRev" ] || _flakeRev="unknown"
-              echo "     flake    ''${_flakeRev:0:8}"
-              echo "     dir      $PWD"
-              echo ""
-              echo "   Reproduce: lbenv switch $LBENV_LADYBIRD"
-            else
-              echo "   no Ladybird version selected"
-              echo "     lbenv               newest recorded"
-              echo "     lbenv switch <key>  pick a version"
-            fi
-            echo ""
-            echo "   lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]"
-            echo ""
           '';
         };
       }

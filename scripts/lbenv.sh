@@ -98,27 +98,84 @@ ensure_worktree() {
 
 # .envrc so an IDE (via direnv) auto-loads this exact devShell on open
 write_envrc() {
-  local dir="$1" lbrev="${2:-}" npkgs="${3:-}" ref
+  local dir="$1" lbrev="${2:-}" npkgs="${3:-}" ref ex
   [ -n "${LBENV_NO_ENVRC:-}" ] && return 0
-  [ -f "$dir/.envrc" ] && return 0
-  # pin flake rev + nixpkgs so a direnv reload reproduces this exact env
-  ref="github:$FLAKE_REPO"
-  [ -n "$lbrev" ] && ref="github:$FLAKE_REPO/$lbrev"
-  if [ -n "$npkgs" ]; then
-    printf 'use flake %s --override-input nixpkgs github:NixOS/nixpkgs/%s\n' \
-      "$ref" "$npkgs" > "$dir/.envrc"
-  else
-    printf 'use flake %s\n' "$ref" > "$dir/.envrc"
+  # ignore lbenv dotfiles in the worktree
+  ex="$(git -C "$dir" rev-parse --git-path info/exclude 2>/dev/null || true)"
+  if [ -n "$ex" ]; then
+    mkdir -p "$(dirname "$ex")"
+    for pat in '.envrc' '.direnv/' '.lbenv.conf' 'Caches/'; do
+      grep -qxF "$pat" "$ex" 2>/dev/null || printf '%s\n' "$pat" >> "$ex"
+    done
   fi
-  command -v direnv >/dev/null 2>&1 && direnv allow "$dir" >/dev/null 2>&1 || true
+  [ -f "$dir/.envrc" ] && return 0
+  # pin flake rev + nixpkgs; nix-direnv direnvrc makes `use flake` gc-root it
+  if [ "$LOCAL" = 1 ]; then
+    ref="$FLAKE_DIR"
+  else
+    ref="github:$FLAKE_REPO"
+    [ -n "$lbrev" ] && ref="github:$FLAKE_REPO/$lbrev"
+  fi
+  {
+    printf 'source %s\n' "@DIRENVRC@"
+    if [ -n "$npkgs" ]; then
+      printf 'use flake %s --override-input nixpkgs github:NixOS/nixpkgs/%s\n' "$ref" "$npkgs"
+    else
+      printf 'use flake %s\n' "$ref"
+    fi
+  } > "$dir/.envrc"
+  direnv allow "$dir" >/dev/null 2>&1 || true
+}
+
+# banner printed by the launcher; the shellHook can't (nix-direnv swallows it)
+print_banner() {
+  local vcpkg npkgs flake
+  echo ""
+  echo "Ladybird Dev Shell"
+  echo ""
+  if [ -n "${LBENV_FLAKE_REV:-}" ]; then
+    vcpkg="${LBENV_VCPKG:--}"; npkgs="${LBENV_NIXPKGS:--}"; flake="${LBENV_FLAKE_REV}"
+    echo "   Commit"
+    echo "     ${LBENV_TITLE:-(not recorded)}"
+    echo "     ${LBENV_WHEN:-}"
+    echo "     ${LBENV_LADYBIRD:-}"
+    echo ""
+    echo "   Environment"
+    echo "     nixpkgs  ${npkgs:0:8}"
+    echo "     vcpkg    ${vcpkg:0:8}"
+    echo "     flake    ${flake:0:8}"
+    echo "     dir      ${LBENV_DIR:-$PWD}"
+    echo ""
+    echo "   Reproduce: lbenv switch ${LBENV_LADYBIRD:-}"
+  else
+    echo "   no Ladybird version selected"
+  fi
+  echo ""
+  echo "   lbenv (newest) | lbenv switch [key|hash] | lbenv new [hash]"
+  echo ""
+}
+
+# print banner, then hand off to the direnv-loaded devShell (gc-rooted by
+# nix-direnv). no .envrc (LBENV_NO_ENVRC) falls back to nix develop, no gc-root
+enter() {
+  local dir="$1"
+  print_banner
+  cd "$dir" || exit 1
+  if [ -f "$dir/.envrc" ]; then
+    direnv allow "$dir" >/dev/null 2>&1 || true
+    exec direnv exec "$dir" "${SHELL:-bash}"
+  else
+    exec nix develop "$FLAKE_REF" --quiet
+  fi
 }
 
 override() {
-  local dir; dir=$(ensure_worktree "$1")   # detached, floating — no .envrc
+  local dir; dir=$(ensure_worktree "$1")
   export LBENV_FLAKE_REV="$(flake_rev)"
-  export LBENV_LADYBIRD="$1" LBENV_TITLE="(not recorded)" LBENV_WHEN="" LBENV_VCPKG="-"
-  cd "$dir" || exit 1
-  exec nix develop "$FLAKE_REF" --quiet
+  export LBENV_LADYBIRD="$1" LBENV_TITLE="(not recorded)" LBENV_WHEN="" \
+         LBENV_VCPKG="-" LBENV_NIXPKGS="-" LBENV_DIR="$dir"
+  write_envrc "$dir"
+  enter "$dir"
 }
 
 # enter one lbdb entry (by ladybird sha), in its worktree.
@@ -149,17 +206,16 @@ freeze_sha() {
   head="$(git rev-parse HEAD 2>/dev/null || true)"
   [ -n "$head" ] && export LBENV_LADYBIRD="$head"
 
-  local dev=()
-  [ -n "$npkgs" ] && dev+=(--override-input nixpkgs "github:NixOS/nixpkgs/$npkgs")
-
-  if [ -n "$lbrev" ]; then
+  if [ "$LOCAL" = 1 ]; then
+    export LBENV_FLAKE_REV="$(flake_rev)"
+  elif [ -n "$lbrev" ]; then
     export LBENV_FLAKE_REV="$lbrev"
-    exec nix develop "github:$FLAKE_REPO/$lbrev" "${dev[@]}" --quiet
   else
     echo "warning: no recorded lbenv rev — using current flake, not frozen" >&2
     export LBENV_FLAKE_REV="$(flake_rev)"
-    exec nix develop "$FLAKE_REF" "${dev[@]}" --quiet
   fi
+  export LBENV_NIXPKGS="$npkgs" LBENV_DIR="$dir"
+  enter "$dir"
 }
 
 case "${1:-}" in
