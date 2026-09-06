@@ -247,7 +247,7 @@
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvm.clang llvm.lld lbenv renderCmd ladybirdCmd ]
+            ++ [ llvm.clang llvm.lld lbenv renderCmd ladybirdCmd pkgs.direnv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
