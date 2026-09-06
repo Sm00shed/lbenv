@@ -5,7 +5,7 @@ A Nix flake that provides a `nix develop` shell for building the
 supplies a pinned toolchain and every build dependency from the Nix store, so
 Ladybird's own dependency fetcher is never used.
 
-Tested scope: on Linux x86_64 (NixOS and CachyOS) the browser builds and runs.
+Tested scope: on Linux x86_64 (NixOS, CachyOS, Debain and WSL2) the browser builds and runs.
 
 Versions live in the `Sm00shed/lbdb` repository: one `<sha>.toml` per
 Ladybird commit, with `latest` naming the newest. No version is active until you
