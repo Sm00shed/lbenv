@@ -158,12 +158,16 @@ print_banner() {
 # print banner, then hand off to the direnv-loaded devShell (gc-rooted by
 # nix-direnv). no .envrc (LBENV_NO_ENVRC) falls back to nix develop, no gc-root
 enter() {
-  local dir="$1"
+  local dir="$1" shell
   print_banner
   cd "$dir" || exit 1
+  # nix develop clobbers $SHELL to a store bash; use the login shell from passwd
+  # so everyone lands in their own shell (fish/bash/zsh) across platforms
+  shell="$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f7)" || true
+  [ -n "$shell" ] && [ -x "$shell" ] || shell="${SHELL:-bash}"
   if [ -f "$dir/.envrc" ]; then
     direnv allow "$dir" >/dev/null 2>&1 || true
-    exec direnv exec "$dir" "${SHELL:-bash}"
+    exec direnv exec "$dir" "$shell"
   else
     exec nix develop "$FLAKE_REF" --quiet
   fi

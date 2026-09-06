@@ -236,7 +236,7 @@
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
             [ "@BINPATH@" "@DB_DIR@" "@DIRENVRC@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils direnv ])}" "${lbdb}" "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils direnv getent ])}" "${lbdb}" "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 
