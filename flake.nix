@@ -236,11 +236,19 @@
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
             [ "@BINPATH@" "@DB_DIR@" "@DIRENVRC@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils direnv getent ])}" "${lbdb}" "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils gnugrep gnused direnv getent ])}" "${lbdb}" "${pkgs.nix-direnv}/share/nix-direnv/direnvrc" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 
       in {
+        # `nix run github:Sm00shed/lbenv` starts lbenv directly (banner -> shell),
+        # no interactive nix-develop bash in between
+        packages.default = lbenv;
+        apps.default = {
+          type = "app";
+          program = "${lbenv}/bin/lbenv";
+        };
+
         devShells.default = pkgs.mkShell {
           name = "lbdev";
 
