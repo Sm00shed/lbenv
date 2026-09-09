@@ -241,8 +241,7 @@
         );
 
       in {
-        # `nix run github:Sm00shed/lbenv` starts lbenv directly (banner -> shell),
-        # no interactive nix-develop bash in between
+        # nix run starts lbenv directly
         packages.default = lbenv;
         apps.default = {
           type = "app";

@@ -61,8 +61,7 @@ main_src() { echo "${LADYBIRD_SRC:-$HOME/ladybird}"; }
 ensure_worktree() {
   local lh="$1" branch="${2:-}" src dir
   src=$(main_src); dir="$(wt_root)/$lh"
-  # a detached worktree shows no branch name (prompts/tools render it empty);
-  # give each one a stable branch so there's always a name to display
+  # stable branch per worktree, not detached
   [ -n "$branch" ] || branch="lbenv/${lh:0:8}"
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
@@ -145,8 +144,7 @@ print_banner() {
   echo ""
 }
 
-# print banner + the cd to run; direnv loads the env, no shell is started.
-# no .envrc (LBENV_NO_ENVRC) means no gc-root: fall back to nix develop
+# print banner + the cd to run; direnv loads the env on cd
 enter() {
   local dir="$1"
   print_banner
