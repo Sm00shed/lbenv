@@ -51,18 +51,26 @@ After this, `nix run github:Sm00shed/lbenv` works directly.
 
 ## Quick start
 
-Start it in one step — this prints the banner, selects the newest recorded
-version, and drops you into its worktree shell:
+First-time setup — wire up the direnv hook and the `lbenv` alias, once per
+machine:
 
 ```bash
-nix run github:Sm00shed/lbenv
+nix run github:Sm00shed/lbenv -- init
+exec $SHELL   # or open a new terminal
 ```
 
-Pick a specific version instead with `-- switch <hash>`, or run `lbenv`,
-`lbenv switch <hash>` etc. once inside. Either way you land in a git worktree for
-the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, with `LADYBIRD_BUILD_DIR`
-(`Build` inside the worktree) exported. Each version is fully isolated — its own
-source and build, never mixed. Configure and build there:
+Pick a version, then enter its worktree:
+
+```bash
+lbenv new                 # newest upstream; or: lbenv switch <hash>
+cd ~/lbenv-wt/<hash>      # direnv loads the environment automatically
+```
+
+`lbenv` prints the worktree path; `cd` into it and direnv loads a fully isolated
+environment for that Ladybird commit — pinned toolchain, all build inputs, and
+`LADYBIRD_BUILD_DIR` (`Build` inside the worktree). No shell is started, you stay
+in your own. Each version has its own source and build, never mixed. Configure
+and build there:
 
 ```bash
 cmake -B "$LADYBIRD_BUILD_DIR" -GNinja \
@@ -133,7 +141,7 @@ Until you pick a version the shell shows none:
          lbenv switch <hash>  pick a version
 
 `lbenv`
-  Enter the newest recorded version.
+  Select the newest recorded version and print its worktree path.
 
 `lbenv switch <hash>`
   Pick a recorded version by its Ladybird commit hash; a unique prefix is
