@@ -1,6 +1,6 @@
 # Reproducible Nix build environment for the Ladybird browser
 
-A Nix flake that provides a `nix develop` shell for building the
+A Nix flake that provides a reproducible dev shell for building the
 [Ladybird](https://github.com/LadybirdBrowser/ladybird) browser. The shell
 supplies a pinned toolchain and every build dependency from the Nix store, so
 Ladybird's own dependency fetcher is never used.
@@ -47,21 +47,22 @@ source the profile once:
 
     . ~/.nix-profile/etc/profile.d/nix.sh
 
-After this, `nix develop github:Sm00shed/lbenv` works directly.
+After this, `nix run github:Sm00shed/lbenv` works directly.
 
 ## Quick start
 
-Enter the shell — it opens an interactive subshell:
+Start it in one step — this prints the banner, selects the newest recorded
+version, and drops you into its worktree shell:
 
 ```bash
-nix develop github:Sm00shed/lbenv
+nix run github:Sm00shed/lbenv
 ```
 
-Pick a version with `lbenv` (newest) or `lbenv switch <hash>`. That creates a
-git worktree for the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, drops
-you into it, and exports `LADYBIRD_BUILD_DIR` (`Build` inside the worktree). Each
-version is fully isolated — its own source and build, never mixed. Configure and
-build there:
+Pick a specific version instead with `-- switch <hash>`, or run `lbenv`,
+`lbenv switch <hash>` etc. once inside. Either way you land in a git worktree for
+the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, with `LADYBIRD_BUILD_DIR`
+(`Build` inside the worktree) exported. Each version is fully isolated — its own
+source and build, never mixed. Configure and build there:
 
 ```bash
 cmake -B "$LADYBIRD_BUILD_DIR" -GNinja \
@@ -104,15 +105,17 @@ The CMake options above serve these purposes.
 After the build, launch the browser from the shell:
 
 ```bash
-Ladybird
+lb
 ```
 
-`Ladybird` is a shell function that runs the browser from the selected version's
-`$LADYBIRD_BUILD_DIR` and passes the CA certificate automatically. Override it
-with an environment variable:
+`lb` is a launcher on PATH that runs the browser from the selected version's
+`$LADYBIRD_BUILD_DIR` and passes the CA certificate automatically. Pick a
+renderer as the first argument (`lb vulkan`, `lb lavapipe`, `lb cpu`); without
+one it uses the default recorded in `.lbenv.conf`, which `render <mode>` sets.
+Override the certificate with an environment variable:
 
 ```bash
-LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird
+LADYBIRD_CERTIFICATE=/path/to/cert.crt lb
 ```
 
 ## Source version management
@@ -172,7 +175,7 @@ bug, include the commit hash from the banner. You can also pin the flake
 reference directly:
 
 ```bash
-nix develop github:Sm00shed/lbenv/<commit-hash>
+nix run github:Sm00shed/lbenv/<commit-hash>
 ```
 
 Each selected version lives in its own git worktree under
@@ -183,7 +186,7 @@ worktrees share one clone (`~/ladybird`) for git objects. Set `LADYBIRD_SRC` /
 
 `lbenv` reads the database from the `lbdb` flake input (works offline), with
 curl as a fallback/refresh. `LADYBIRD_FLAKE_DIR=~/lbenv` points `lbenv` at a
-local clone of *this* flake for `nix develop`; otherwise the published flake on
+local clone of *this* flake for the dev shell; otherwise the published flake on
 GitHub is used.
 
 ## What this environment does
