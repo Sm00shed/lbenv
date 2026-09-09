@@ -55,7 +55,7 @@ direnv loads the version environment automatically on `cd`. Install it (skip if
 you already have it):
 
 ```bash
-nix profile install nixpkgs#direnv
+nix profile add nixpkgs#direnv
 ```
 
 `lbenv init` (below) wires the direnv hook into your shell.

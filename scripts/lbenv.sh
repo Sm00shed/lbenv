@@ -260,7 +260,7 @@ do_init() {
 
   echo "added direnv hook + lbenv alias to $cfg"
   echo ""
-  echo "  needs direnv on PATH: nix profile install nixpkgs#direnv (if missing)"
+  echo "  needs direnv on PATH: nix profile add nixpkgs#direnv (if missing)"
   echo "  reload your shell:    exec $(basename "$shell")   (or open a new terminal)"
   echo "  then:                 lbenv"
 }
