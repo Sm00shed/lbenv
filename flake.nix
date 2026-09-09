@@ -183,7 +183,7 @@
             > "$conf.tmp" && mv "$conf.tmp" "$conf"
           echo "default renderer: $1"
         '';
-        ladybirdCmd = pkgs.writeShellScriptBin "Ladybird" ''
+        ladybirdCmd = pkgs.writeShellScriptBin "lb" ''
           conf="''${LADYBIRD_SRC_DIR:?}/.lbenv.conf"
           mode=cpu
           [ -f "$conf" ] && mode=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$conf" | tail -n1)
