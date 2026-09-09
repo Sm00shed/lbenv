@@ -145,22 +145,18 @@ print_banner() {
   echo ""
 }
 
-# print banner, then hand off to the direnv-loaded devShell (gc-rooted by
-# nix-direnv). no .envrc (LBENV_NO_ENVRC) falls back to nix develop, no gc-root
+# print banner + the cd to run; direnv loads the env, no shell is started.
+# no .envrc (LBENV_NO_ENVRC) means no gc-root: fall back to nix develop
 enter() {
-  local dir="$1" shell
+  local dir="$1"
   print_banner
-  cd "$dir" || exit 1
-  # nix develop clobbers $SHELL to a store bash; use the login shell from passwd
-  # so everyone lands in their own shell (fish/bash/zsh) across platforms
-  shell="$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f7)" || true
-  [ -n "$shell" ] && [ -x "$shell" ] || shell="${SHELL:-bash}"
   if [ -f "$dir/.envrc" ]; then
-    direnv allow "$dir" >/dev/null 2>&1 || true
-    exec direnv exec "$dir" "$shell"
+    echo "   cd ${dir/#$HOME/\~}"
+    echo "   (direnv loads it; run 'lbenv init' once if nothing happens)"
   else
-    exec nix develop "$FLAKE_REF" --quiet
+    echo "   nix develop ${dir/#$HOME/\~}"
   fi
+  echo ""
 }
 
 override() {
@@ -210,6 +206,62 @@ freeze_sha() {
   fi
   export LBENV_NIXPKGS="$npkgs" LBENV_DIR="$dir"
   enter "$dir"
+}
+
+# set up the direnv hook + lbenv alias in the user's shell rc; idempotent
+do_init() {
+  local shell cfg hook alias_line target
+  shell="$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f7)" || true
+  [ -n "$shell" ] || shell="${SHELL:-}"
+  case "$(basename "$shell")" in
+    fish)
+      cfg="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
+      hook='direnv hook fish | source'
+      alias_line="alias lbenv 'nix run github:$FLAKE_REPO --'" ;;
+    bash)
+      cfg="$HOME/.bashrc"
+      hook='eval "$(direnv hook bash)"'
+      alias_line="alias lbenv='nix run github:$FLAKE_REPO --'" ;;
+    zsh)
+      cfg="${ZDOTDIR:-$HOME}/.zshrc"
+      hook='eval "$(direnv hook zsh)"'
+      alias_line="alias lbenv='nix run github:$FLAKE_REPO --'" ;;
+    *)
+      echo "lbenv init: unsupported shell '${shell:-unknown}'" >&2
+      echo "add the direnv hook by hand: https://direnv.net/docs/hook.html" >&2
+      exit 1 ;;
+  esac
+
+  # home-manager-managed rc (nix-store symlink): skip
+  target=""
+  if [ -L "$cfg" ]; then target="$(readlink -f "$cfg" 2>/dev/null || true)"; fi
+  case "$target" in
+    /nix/store/*)
+      echo "lbenv init: $cfg is managed by home-manager (nix-store symlink)." >&2
+      echo "enable it declaratively in your home-manager config instead:" >&2
+      echo "    programs.direnv.enable = true;" >&2
+      echo "    programs.direnv.nix-direnv.enable = true;" >&2
+      exit 1 ;;
+  esac
+
+  # already set up
+  if [ -f "$cfg" ] && grep -q '# >>> lbenv >>>' "$cfg"; then
+    echo "lbenv init: already set up in $cfg"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$cfg")"
+  {
+    printf '\n# >>> lbenv >>>\n'
+    printf '%s\n' "$hook"
+    printf '%s\n' "$alias_line"
+    printf '# <<< lbenv <<<\n'
+  } >> "$cfg"
+
+  echo "added direnv hook + lbenv alias to $cfg"
+  echo ""
+  echo "  reload your shell:  exec $(basename "$shell")   (or open a new terminal)"
+  echo "  then:               lbenv new"
 }
 
 case "${1:-}" in
@@ -263,12 +315,16 @@ case "${1:-}" in
     fi
     freeze_sha "$sha"
     ;;
+  init)
+    do_init
+    ;;
   *)
     echo "usage:" >&2
     echo "  lbenv                  newest recorded version" >&2
     echo "  lbenv switch <hash>    pick a recorded version by sha (prefix ok)" >&2
     echo "  lbenv dev              develop on newest recorded (own branch, inherited pin)" >&2
     echo "  lbenv new [hash]       floating, unrecorded commit" >&2
+    echo "  lbenv init             set up the direnv hook + lbenv alias in your shell" >&2
     exit 1
     ;;
 esac
