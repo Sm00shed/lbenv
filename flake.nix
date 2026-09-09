@@ -264,7 +264,7 @@
               wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
-              dejavu_fonts liberation_ttf cacert
+              cacert
               patchelf glslang
               libdrm.dev vulkanHeadersPinned vulkan-loader.dev
               libGL.dev libpulseaudio.dev glib.dev libsysprof-capture
@@ -278,11 +278,6 @@
             export CMAKE_PREFIX_PATH="${cmakePrefixPath}''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
             export ICU_ROOT=${pkgs.icu78.dev}
             export PKG_CONFIG_PATH="${ladybirdSkia}/lib/pkgconfig:${ladybirdAngle}/lib/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-            # fontconfig conf.d
-            export FONTCONFIG_FILE=${pkgs.runCommand "ladybird-fonts.conf" { } ''
-              substitute ${pkgs.makeFontsConf { fontDirectories = with pkgs; [ dejavu_fonts liberation_ttf ]; }} $out \
-                --replace-fail '/etc/fonts/conf.d' '${pkgs.fontconfig.out}/etc/fonts/conf.d'
-            ''}
             export CLANGD_PATH=${llvm.clang-unwrapped}/bin/clangd
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
 
