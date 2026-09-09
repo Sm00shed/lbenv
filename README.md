@@ -13,9 +13,9 @@ pick one with `lbenv` — see [Source version management](#source-version-manage
 
 ## Requirements
 
-The only thing that must be installed on the host is Nix. No compiler, no
-CMake, no git — the shell brings its own Clang 21, LLD, CMake, Ninja, git, and
-the rest of the build inputs.
+Two things on the host: Nix, and direnv (it loads the environment when you `cd`
+into a version). No compiler, no CMake, no git — the shell brings its own
+Clang 21, LLD, CMake, Ninja, git, and the rest of the build inputs.
 
 ### Install Nix
 
@@ -49,6 +49,17 @@ source the profile once:
 
 After this, `nix run github:Sm00shed/lbenv` works directly.
 
+### Install direnv
+
+direnv loads the version environment automatically on `cd`. Install it (skip if
+you already have it):
+
+```bash
+nix profile install nixpkgs#direnv
+```
+
+`lbenv init` (below) wires the direnv hook into your shell.
+
 ## Quick start
 
 First-time setup — wire up the direnv hook and the `lbenv` alias, once per
@@ -62,7 +73,7 @@ exec $SHELL   # or open a new terminal
 Pick a version, then enter its worktree:
 
 ```bash
-lbenv new                 # newest upstream; or: lbenv switch <hash>
+lbenv                     # newest recorded version; or: lbenv switch <hash>
 cd ~/lbenv-wt/<hash>      # direnv loads the environment automatically
 ```
 
