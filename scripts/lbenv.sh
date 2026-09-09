@@ -216,15 +216,15 @@ do_init() {
   case "$(basename "$shell")" in
     fish)
       cfg="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
-      hook='direnv hook fish | source'
+      hook='command -q direnv && direnv hook fish | source'
       alias_line="alias lbenv 'nix run github:$FLAKE_REPO --'" ;;
     bash)
       cfg="$HOME/.bashrc"
-      hook='eval "$(direnv hook bash)"'
+      hook='command -v direnv >/dev/null && eval "$(direnv hook bash)"'
       alias_line="alias lbenv='nix run github:$FLAKE_REPO --'" ;;
     zsh)
       cfg="${ZDOTDIR:-$HOME}/.zshrc"
-      hook='eval "$(direnv hook zsh)"'
+      hook='command -v direnv >/dev/null && eval "$(direnv hook zsh)"'
       alias_line="alias lbenv='nix run github:$FLAKE_REPO --'" ;;
     *)
       echo "lbenv init: unsupported shell '${shell:-unknown}'" >&2
@@ -260,8 +260,9 @@ do_init() {
 
   echo "added direnv hook + lbenv alias to $cfg"
   echo ""
-  echo "  reload your shell:  exec $(basename "$shell")   (or open a new terminal)"
-  echo "  then:               lbenv new"
+  echo "  needs direnv on PATH: nix profile install nixpkgs#direnv (if missing)"
+  echo "  reload your shell:    exec $(basename "$shell")   (or open a new terminal)"
+  echo "  then:                 lbenv"
 }
 
 case "${1:-}" in
