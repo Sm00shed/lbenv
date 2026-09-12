@@ -69,7 +69,7 @@ cmake -B "$LADYBIRD_BUILD_DIR" -GNinja \
   -DENABLE_LTO_FOR_RELEASE=OFF \
   -DICU_ROOT="$ICU_ROOT" \
   -DENABLE_NETWORK_DOWNLOADS=OFF \
-  -DLADYBIRD_CACHE_DIR=Caches
+  -DLADYBIRD_CACHE_DIR="$LADYBIRD_SRC_DIR/Caches"
 ```
 
 Compile:
@@ -96,8 +96,10 @@ The CMake options above serve these purposes.
   Stops the build from fetching data files at configure time. The shell
   pre-populates them (see below).
 
-`-DLADYBIRD_CACHE_DIR=Caches`
-  Uses the in-tree `Caches` directory that the shell fills.
+`-DLADYBIRD_CACHE_DIR="$LADYBIRD_SRC_DIR/Caches"`
+  Uses the in-tree `Caches` directory that the shell fills. The path must be
+  absolute: a relative one is resolved per CMake subdirectory and ninja then
+  looks for `Libraries/LibHTTP/Caches/HSTSPreload`.
 
 ## Running
 
