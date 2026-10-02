@@ -88,8 +88,7 @@
 
         ffmpegPinned = pkgs.ffmpeg_7;
 
-        # upstream now looks up pkg-config modules *-ladybird (own vcpkg ffmpeg
-        # port, --build-suffix=-ladybird); alias our plain nixpkgs .pc files
+        # upstream pkg-config modules are now *-ladybird; alias our .pc files
         ffmpegLadybirdPc = pkgs.runCommand "ffmpeg-ladybird-pc" { } ''
           mkdir -p $out/lib/pkgconfig
           for m in avcodec avformat avutil swresample; do
@@ -207,6 +206,9 @@
 
         cmakePrefixPath = pkgs.lib.concatStringsSep ":" (map toString cmakePrefixParts);
 
+        # helper processes drop LD_LIBRARY_PATH (env allowlist); use as RPATH too
+        libraryPath = pkgs.lib.makeLibraryPath libPkgs;
+
         nixpkgsSrc = nixpkgs;
 
 
@@ -270,9 +272,9 @@
             unset CMAKE_TOOLCHAIN_FILE
 
             # shell-wide: generated host tools link libstdc++ from stdenv at build time
-            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libPkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-            export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
-            export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
+            export LD_LIBRARY_PATH="${libraryPath}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
+            export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
             # renderer cpu | lavapipe (SW) | vulkan (HW); default in .lbenv.conf,
