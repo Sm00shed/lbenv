@@ -273,8 +273,8 @@
 
             # shell-wide: generated host tools link libstdc++ from stdenv at build time
             export LD_LIBRARY_PATH="${libraryPath}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-            export CMAKE_EXE_LINKER_FLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${CMAKE_EXE_LINKER_FLAGS:+ $CMAKE_EXE_LINKER_FLAGS}"
-            export CMAKE_SHARED_LINKER_FLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${CMAKE_SHARED_LINKER_FLAGS:+ $CMAKE_SHARED_LINKER_FLAGS}"
+            # CMake reads LDFLAGS from env, not CMAKE_*_LINKER_FLAGS directly
+            export LDFLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${LDFLAGS:+ $LDFLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
             # renderer cpu | lavapipe (SW) | vulkan (HW); default in .lbenv.conf,
