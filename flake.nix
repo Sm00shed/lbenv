@@ -128,22 +128,8 @@
 
         zlibPinned = pkgs.zlib;
 
-        harfbuzzPinned = pkgs.harfbuzz.overrideAttrs (prev: rec {
-          version = "10.2.0";
-          src = pkgs.fetchurl {
-            url  = "https://github.com/harfbuzz/harfbuzz/releases/download/${version}/harfbuzz-${version}.tar.xz";
-            hash = "sha256-Yg40aPrsLqhoXTLEalhGm4UO9jBAs1Zc3gWVmCW0gic=";
-          };
-          patches = [];
-          # drop the exact flag; throw if it's gone (renamed upstream)
-          mesonFlags =
-            let
-              drop = "-Draster=disabled";
-              kept = builtins.filter (f: f != drop) prev.mesonFlags;
-            in if kept == prev.mesonFlags
-               then throw "harfbuzz: expected meson flag '${drop}' not found — renamed upstream?"
-               else kept;
-        });
+        # qtbase pulls its own harfbuzz; same SONAME, pin collided and crashed
+        harfbuzzPinned = pkgs.harfbuzz;
 
         # vcpkg 2.15.3
         libxml2Pinned = pkgsU.libxml2;
