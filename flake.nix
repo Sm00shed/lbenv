@@ -137,7 +137,7 @@
         freetypePinned = pkgs.freetype;
 
         # pin to nixos-26.05, no point-bump drift
-        sdl3Pinned = pkgs.sdl3.overrideAttrs (_: rec {
+        sdl3Pinned = pkgs.sdl3.overrideAttrs (prev: rec {
           version = "3.4.10";
           src = pkgs.fetchFromGitHub {
             owner = "libsdl-org";
@@ -145,6 +145,16 @@
             rev   = "refs/tags/release-${version}";
             hash  = "sha256-6Dph2eLiJUmpQzPWe8EuY5LrWhrFwde2f2dwfgCcWNw=";
           };
+          # vcpkg leaves libusb off; its event thread breaks WebContent's landlock check
+          cmakeFlags =
+            let
+              drop = "-DSDL_HIDAPI_LIBUSB:BOOL=TRUE";
+              kept = builtins.filter (f: f != drop) prev.cmakeFlags;
+            in if kept == prev.cmakeFlags
+               then throw "sdl3: expected cmake flag '${drop}' not found — renamed upstream?"
+               else kept ++ [ "-DSDL_HIDAPI_LIBUSB:BOOL=FALSE" ];
+          # SDL's suite checks haptic init, which needs libusb; Ladybird never uses it
+          doCheck = false;
         });
 
         # vcpkg 1.4.2
