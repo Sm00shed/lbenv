@@ -174,7 +174,21 @@
 
         # in-store mesa Vulkan ICDs; HW drivers (radeon/intel/…) and lavapipe (SW)
         mesaIcdDir = "${pkgs.mesa}/share/vulkan/icd.d";
-        lavapipeIcd = "${mesaIcdDir}/lvp_icd.${pkgs.stdenv.hostPlatform.parsed.cpu.name}.json";
+
+        # one share dir per renderer; helper processes only see XDG_DATA_DIRS, not VK_*
+        lavapipeIcdShare = pkgs.runCommand "lb-vulkan-icd-lavapipe" { } ''
+          mkdir -p $out/share/vulkan/icd.d
+          cp ${mesaIcdDir}/lvp_icd.*.json $out/share/vulkan/icd.d/
+        '';
+
+        hwIcdShare = pkgs.runCommand "lb-vulkan-icd-hw" { } ''
+          mkdir -p $out/share/vulkan/icd.d
+          for f in ${mesaIcdDir}/*_icd.*.json; do
+            case "$(basename "$f")" in lvp_icd.*) continue ;; esac
+            cp "$f" $out/share/vulkan/icd.d/
+          done
+          [ -n "$(ls -A $out/share/vulkan/icd.d)" ] || { echo "no mesa HW ICDs found" >&2; exit 1; }
+        '';
 
         libPkgs = with pkgs; [
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
@@ -279,23 +293,25 @@
             _lb_render_default=cpu
             [ -f "$_lb_conf" ] && _lb_render_default=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$_lb_conf" | tail -n1)
             export LB_RENDER="''${LB_RENDER:-''${_lb_render_default:-cpu}}"
+            _lb_xdg_data_dirs_orig="''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
             _lb_render_env() {
               unset VK_DRIVER_FILES VK_ICD_FILENAMES
               LB_RENDER_ARGS=()
+              local share=""
+              export XDG_DATA_DIRS="$_lb_xdg_data_dirs_orig"
               case "$1" in
-                lavapipe)
-                  export VK_DRIVER_FILES="${lavapipeIcd}" VK_ICD_FILENAMES="${lavapipeIcd}" ;;
-                vulkan)
-                  # all in-store mesa HW drivers, minus lavapipe; loader picks the present GPU
-                  local icds; icds=$(ls "${mesaIcdDir}"/*_icd.*.json 2>/dev/null | grep -v lvp_icd | paste -sd:)
-                  [ -n "$icds" ] || { echo "render vulkan: no mesa HW ICDs found" >&2; return 1; }
-                  export VK_DRIVER_FILES="$icds" VK_ICD_FILENAMES="$icds" ;;
+                lavapipe) share="${lavapipeIcdShare}" ;;
+                vulkan)   share="${hwIcdShare}" ;;
                 nvidia)
                   echo "render nvidia: placeholder — proprietary NVIDIA needs nixVulkanNvidia (impure), not implemented" >&2
                   return 1 ;;
+                # the Compositor skips GPU init entirely here, so it needs no ICD
                 cpu) LB_RENDER_ARGS=(--force-cpu-painting) ;;
                 *) echo "render: unknown mode '$1' (vulkan|nvidia|lavapipe|cpu)" >&2; return 1 ;;
               esac
+              # helper processes keep only allowlisted vars, so VK_* never arrives there
+              [ -n "$share" ] && export XDG_DATA_DIRS="$share/share:$_lb_xdg_data_dirs_orig"
+              return 0
             }
             render() {   # set the persistent default in .lbenv.conf
               _lb_render_env "$1" || return 1
