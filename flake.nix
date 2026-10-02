@@ -88,6 +88,15 @@
 
         ffmpegPinned = pkgs.ffmpeg_7;
 
+        # upstream now looks up pkg-config modules *-ladybird (own vcpkg ffmpeg
+        # port, --build-suffix=-ladybird); alias our plain nixpkgs .pc files
+        ffmpegLadybirdPc = pkgs.runCommand "ffmpeg-ladybird-pc" { } ''
+          mkdir -p $out/lib/pkgconfig
+          for m in avcodec avformat avutil swresample; do
+            cp ${ffmpegPinned.dev}/lib/pkgconfig/lib$m.pc $out/lib/pkgconfig/lib$m-ladybird.pc
+          done
+        '';
+
         # vcpkg 3.6.3
         opensslPinned = pkgsU.openssl;
 
@@ -185,7 +194,7 @@
         cmakePrefixParts = with pkgs; [
           icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev fmtPinned.dev
           fontconfig.dev expat.dev libavifPinned.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
-          woff2.dev ffmpegPinned.dev libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
+          woff2.dev ffmpegPinned.dev ffmpegLadybirdPc libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
           mimalloc227.dev
           # symbolized stacktraces
