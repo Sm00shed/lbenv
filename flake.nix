@@ -361,6 +361,10 @@
               cp --no-preserve=mode ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
                  "$PWD/Caches/CACERT/ca-bundle.crt"
               export LADYBIRD_CERTIFICATE="$PWD/Caches/CACERT/ca-bundle.crt"
+
+              # crash reports come from XDG_DATA_HOME, the profile from --profile-path
+              export XDG_DATA_HOME="$PWD/.lbenv/data"
+              mkdir -p "$XDG_DATA_HOME"
             fi
             unset VCPKG_ROOT
             unset CMAKE_TOOLCHAIN_FILE
@@ -410,6 +414,8 @@
               _lb_render_env "$mode" || return 1
               local args=("''${LB_RENDER_ARGS[@]}")
               [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
+              # own runtime socket per version, else a new build attaches to a running old one
+              args+=(--profile-path "$LADYBIRD_SRC_DIR/.lbenv/profile")
               "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
             }
 
