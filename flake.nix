@@ -86,7 +86,19 @@
           patches = [];
         });
 
-        ffmpegPinned = pkgs.ffmpeg_7;
+        # vcpkg 1.5.4 (drift #10), nixpkgs has 1.5.3
+        dav1dPinned = pkgs.dav1d.overrideAttrs (_: rec {
+          version = "1.5.4";
+          src = pkgs.fetchFromGitHub {
+            owner = "videolan";
+            repo  = "dav1d";
+            rev   = version;
+            hash  = "sha256-L3a9MmPWJlxmRa19glWDLvkXHev5oiM5/fxtKOBPMxI=";
+          };
+        });
+
+        # vcpkg 9.0.2
+        ffmpegPinned = pkgsU.ffmpeg_9.override { dav1d = dav1dPinned; };
 
         # upstream pkg-config modules are now *-ladybird; alias our .pc files
         ffmpegLadybirdPc = pkgs.runCommand "ffmpeg-ladybird-pc" { } ''
@@ -158,7 +170,7 @@
         });
 
         # vcpkg 1.4.2
-        libavifPinned = pkgsU.libavif;
+        libavifPinned = pkgsU.libavif.override { dav1d = dav1dPinned; };
 
         # vcpkg 8.23.0 (drift #9), nixpkgs has 8.22.0
         curlPinned = pkgsU.curlFull.overrideAttrs (_: rec {
