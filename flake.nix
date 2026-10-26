@@ -136,6 +136,17 @@
           };
         });
 
+        # vcpkg 5.0.2, nixpkgs has 4.6.x
+        simdjsonPinned = pkgs.simdjson.overrideAttrs (_: rec {
+          version = "5.0.2";
+          src = pkgs.fetchFromGitHub {
+            owner = "simdjson";
+            repo  = "simdjson";
+            rev   = "v${version}";
+            hash  = "sha256-08ge7ZstT0mJczsFoahzxK3dtEFRdPXpJtJLFj5uVVA=";
+          };
+        });
+
         # vcpkg 1.6.59 (drift #19), unstable; nixpkgs libpng has apng patch on
         libpngPinned = pkgsU.libpng;
 
@@ -207,7 +218,7 @@
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmtPinned simdutfPinned simdjson libtommath libpsl libedit cpptracePinned
+          fmtPinned simdutfPinned simdjsonPinned libtommath libpsl libedit cpptracePinned
           libdrm vulkan-loader vmaPinned
           libGL libpulseaudio glib libxkbcommon qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
@@ -256,7 +267,7 @@
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
-              zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
+              zstd.dev libidn2.dev woff2.dev icu78.dev simdjsonPinned mimalloc227.dev
               wuffsSinglefile cpptracePinned libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
