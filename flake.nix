@@ -108,8 +108,8 @@
           done
         '';
 
-        # vcpkg 3.6.3
-        opensslPinned = pkgsU.openssl;
+        # vcpkg 3.6.5; unstable default openssl is 3.5, so take 3.6 explicitly
+        opensslPinned = pkgsU.openssl_3_6;
 
         # vcpkg 3.53.3
         sqlitePinned = pkgsU.sqlite;
