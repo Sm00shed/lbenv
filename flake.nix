@@ -204,7 +204,6 @@
         cpptracePinned = pkgsU.cpptrace;
 
         # these match the vcpkg pin exactly
-        fmtPinned = pkgsU.fmt;                              # 12.2.0
         fastFloatPinned = pkgsU.fast-float;                 # 8.3.2
         # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
         # gives -9 (INCOMPATIBLE_DRIVER); keep the whole stack on stable
@@ -236,14 +235,14 @@
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmtPinned simdutfPinned simdjsonPinned libtommath libpsl libedit cpptracePinned zmijPinned
+          simdutfPinned simdjsonPinned libtommath libpsl libedit cpptracePinned zmijPinned
           libdrm vulkan-loader vmaPinned
           libGL libpulseaudio glib libxkbcommon qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
         ];
 
         cmakePrefixParts = with pkgs; [
-          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev fmtPinned.dev
+          icu78.dev harfbuzzPinned.dev opensslPinned.dev curlPinned.dev sdl3Pinned.dev
           fontconfig.dev expat.dev libavifPinned.dev libpngPinned.dev libxml2Pinned.dev zlibPinned.dev
           woff2.dev ffmpegPinned.dev ffmpegLadybirdPc libedit.dev libpsl.dev libjpegTurboPinned.dev sqlitePinned.dev
           freetypePinned.dev
@@ -284,7 +283,7 @@
             ++ [ llvm.clang llvm.lld lbenv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
-              curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
+              curlPinned.dev fastFloatPinned ffmpegPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjsonPinned zmijPinned mimalloc227.dev
               wuffsSinglefile cpptracePinned libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
