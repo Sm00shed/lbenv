@@ -160,8 +160,21 @@
         # vcpkg 1.4.2
         libavifPinned = pkgsU.libavif;
 
+        # vcpkg 8.23.0 (drift #9), nixpkgs has 8.22.0
+        curlPinned = pkgsU.curlFull.overrideAttrs (_: rec {
+          version = "8.23.0";
+          src = pkgsU.fetchurl {
+            urls = [
+              "https://curl.se/download/curl-${version}.tar.xz"
+              "https://github.com/curl/curl/releases/download/curl-${
+                builtins.replaceStrings [ "." ] [ "_" ] version
+              }/curl-${version}.tar.xz"
+            ];
+            hash = "sha256-ja3X0lNqMU+YKtBaZRtxP0Jr99Aswsds/7l5byIY5sU=";
+          };
+        });
+
         # these match the vcpkg pin exactly
-        curlPinned = pkgsU.curlFull;                        # 8.21.0
         fmtPinned = pkgsU.fmt;                              # 12.2.0
         fastFloatPinned = pkgsU.fast-float;                 # 8.2.10
         # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
