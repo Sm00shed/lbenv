@@ -174,7 +174,7 @@
         libavifPinned = pkgsU.libavif.override { dav1d = dav1dPinned; };
 
         # vcpkg 8.23.0 (drift #9), nixpkgs has 8.22.0
-        curlPinned = pkgsU.curlFull.overrideAttrs (_: rec {
+        curlPinned = (pkgsU.curl.override { websocketSupport = true; }).overrideAttrs (_: rec {
           version = "8.23.0";
           src = pkgsU.fetchurl {
             urls = [
