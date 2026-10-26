@@ -136,7 +136,8 @@
           };
         });
 
-        libpngPinned = pkgs.libpng;
+        # vcpkg 1.6.59 (drift #19), unstable; nixpkgs libpng has apng patch on
+        libpngPinned = pkgsU.libpng;
 
         zlibPinned = pkgs.zlib;
 
