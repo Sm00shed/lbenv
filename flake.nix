@@ -188,7 +188,7 @@
 
         # these match the vcpkg pin exactly
         fmtPinned = pkgsU.fmt;                              # 12.2.0
-        fastFloatPinned = pkgsU.fast-float;                 # 8.2.10
+        fastFloatPinned = pkgsU.fast-float;                 # 8.3.2
         # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
         # gives -9 (INCOMPATIBLE_DRIVER); keep the whole stack on stable
         vmaPinned = pkgs.vulkan-memory-allocator;           # 3.3.0
