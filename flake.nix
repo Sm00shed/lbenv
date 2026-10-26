@@ -186,6 +186,9 @@
           };
         });
 
+        # vcpkg libdwarf 2.3.3 (drift #16); 26.05 has 2.3.1, unstable 2.3.3
+        cpptracePinned = pkgsU.cpptrace;
+
         # these match the vcpkg pin exactly
         fmtPinned = pkgsU.fmt;                              # 12.2.0
         fastFloatPinned = pkgsU.fast-float;                 # 8.3.2
@@ -219,7 +222,7 @@
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmtPinned simdutfPinned simdjson libtommath libpsl libedit cpptrace
+          fmtPinned simdutfPinned simdjson libtommath libpsl libedit cpptracePinned
           libdrm vulkan-loader vmaPinned
           libGL libpulseaudio glib libxkbcommon qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
@@ -232,7 +235,7 @@
           freetypePinned.dev
           mimalloc227.dev
           # symbolized stacktraces
-          cpptrace
+          cpptracePinned
           libtommath
           vulkan-loader.dev vulkanHeadersPinned vmaPinned
           libpulseaudio.dev libGL.dev libsysprof-capture
@@ -269,7 +272,7 @@
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjson mimalloc227.dev
-              wuffsSinglefile cpptrace libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
+              wuffsSinglefile cpptracePinned libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
               dejavu_fonts liberation_ttf cacert
