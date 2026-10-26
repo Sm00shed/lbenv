@@ -147,6 +147,24 @@
           };
         });
 
+        # vcpkg zmij 1.2 (drift #33); only in nixpkgs master so far, same recipe as there
+        zmijPinned = pkgs.stdenv.mkDerivation (finalAttrs: {
+          pname = "zmij";
+          version = "1.2";
+          src = pkgs.fetchFromGitHub {
+            owner = "vitaut";
+            repo  = "zmij";
+            rev   = "v${finalAttrs.version}";
+            hash  = "sha256-2tppKuONy9IS5IzGJF+4bqAav3aaQMZjiQCMoi5WscE=";
+          };
+          nativeBuildInputs = [ pkgs.cmake ];
+          cmakeFlags = [
+            "-DBUILD_SHARED_LIBS=ON"
+            "-DZMIJ_TEST=OFF"
+            "-DZMIJ_EXAMPLE=OFF"
+          ];
+        });
+
         # vcpkg 1.6.59 (drift #19), unstable; nixpkgs libpng has apng patch on
         libpngPinned = pkgsU.libpng;
 
@@ -218,7 +236,7 @@
           curlPinned ffmpegPinned.lib fontconfig.lib libavifPinned ladybirdAngle libwebp libxcrypt
           opensslPinned sdl3Pinned brotli.lib lcms2 zstd libidn2 woff2.lib icu78
           mimalloc227 harfbuzzPinned libjpegTurboPinned libpngPinned libxml2Pinned sqlitePinned zlibPinned freetypePinned ladybirdSkia
-          fmtPinned simdutfPinned simdjsonPinned libtommath libpsl libedit cpptracePinned
+          fmtPinned simdutfPinned simdjsonPinned libtommath libpsl libedit cpptracePinned zmijPinned
           libdrm vulkan-loader vmaPinned
           libGL libpulseaudio glib libxkbcommon qt6Packages.qtbase qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
           stdenv.cc.cc.lib
@@ -232,6 +250,7 @@
           mimalloc227.dev
           # symbolized stacktraces
           cpptracePinned
+          zmijPinned
           libtommath
           vulkan-loader.dev vulkanHeadersPinned vmaPinned
           libpulseaudio.dev libGL.dev libsysprof-capture
@@ -267,7 +286,7 @@
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fmtPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
-              zstd.dev libidn2.dev woff2.dev icu78.dev simdjsonPinned mimalloc227.dev
+              zstd.dev libidn2.dev woff2.dev icu78.dev simdjsonPinned zmijPinned mimalloc227.dev
               wuffsSinglefile cpptracePinned libedit libedit.dev libpsl libpsl.dev harfbuzzPinned.dev libjpegTurboPinned.dev
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
