@@ -125,14 +125,14 @@
           };
         });
 
-        # vcpkg 9.1.0, not in nixpkgs yet
+        # vcpkg 9.1.1, not in nixpkgs (26.05 9.0.0, unstable 9.2.1)
         simdutfPinned = pkgs.simdutf.overrideAttrs (_: rec {
-          version = "9.1.0";
+          version = "9.1.1";
           src = pkgs.fetchFromGitHub {
             owner = "simdutf";
             repo  = "simdutf";
             rev   = "v${version}";
-            hash  = "sha256-PKL495sfkRKjHfN4RroW1dwudJV2JWN7ogB8hyDxj5Y=";
+            hash  = "sha256-u0Ur/o2TRLqYisS7xQHBxN/742BzmbElNUeqgEzpw/I=";
           };
         });
 
