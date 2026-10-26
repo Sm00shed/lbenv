@@ -53,12 +53,12 @@
         });
 
         wuffsSinglefile = pkgs.stdenv.mkDerivation {
-          name = "wuffs-singlefile-0.3.4";
+          name = "wuffs-singlefile-0.3.5";
           src  = pkgs.fetchFromGitHub {
             owner = "google";
             repo  = "wuffs-mirror-release-c";
-            rev   = "v0.3.4";
-            hash  = "sha256-V7inWJqH7Q4Ac/ZB//7XHrpgfAYUPBxWBerBem6Q/Kk=";
+            rev   = "v0.3.5";
+            hash  = "sha256-AMuAaCbNJYnSeac1B1IRSUh4rlE2KphT04/Ak4Pig5M=";
           };
           dontBuild    = true;
           installPhase = ''
