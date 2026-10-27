@@ -32,7 +32,9 @@
           overlays = [ ];
         };
 
-        # unstable, only for the libs 26.05 is behind on
+        # unstable, only for the libs 26.05 is behind on.
+        # Must use the same glibc as 26.05 (2.42): unstable moved to 2.44 on 2026-09-28,
+        # so the lock pins the last 2.42 commit and newer versions come via overrides.
         pkgsU = import nixpkgs-unstable {
           inherit system;
           config = { };
@@ -97,8 +99,18 @@
           };
         });
 
-        # vcpkg 9.0.2
-        ffmpegPinned = pkgsU.ffmpeg_9.override { dav1d = dav1dPinned; };
+        # vcpkg 9.0.2; pinned unstable has 9.0.1. Hash as in later nixpkgs.
+        # 9.0.2 already contains the loongarch yuv2plane1 fix (upstream fa97c9f046),
+        # so drop nixpkgs' backport of it or the patch fails to apply.
+        ffmpegPinned = (pkgsU.ffmpeg_9.override {
+          version = "9.0.2";
+          hash    = "sha256-/c6cVfMSF6JJxCuJs58bxBlmBXDJ+jbnC4pELB97Qb0=";
+          dav1d   = dav1dPinned;
+        }).overrideAttrs (prev: {
+          patches = builtins.filter
+            (p: !(builtins.isAttrs p && pkgs.lib.hasInfix "loongarch-fix-buffer-underflow" (p.name or "")))
+            (prev.patches or [ ]);
+        });
 
         # upstream pkg-config modules are now *-ladybird; alias our .pc files
         ffmpegLadybirdPc = pkgs.runCommand "ffmpeg-ladybird-pc" { } ''
@@ -108,8 +120,14 @@
           done
         '';
 
-        # vcpkg 3.6.5; unstable default openssl is 3.5, so take 3.6 explicitly
-        opensslPinned = pkgsU.openssl_3_6;
+        # vcpkg 3.6.5; pinned unstable has 3.6.4
+        opensslPinned = pkgsU.openssl_3_6.overrideAttrs (_: rec {
+          version = "3.6.5";
+          src = pkgsU.fetchurl {
+            url  = "https://github.com/openssl/openssl/releases/download/openssl-${version}/openssl-${version}.tar.gz";
+            hash = "sha256-ohV8KDDv3sN4iTmwDJsGODBtPwu7dtxIMu5QO7OX35g=";
+          };
+        });
 
         # vcpkg 3.53.3
         sqlitePinned = pkgsU.sqlite;
@@ -165,8 +183,14 @@
           ];
         });
 
-        # vcpkg 1.6.59 (drift #19), unstable; nixpkgs libpng has apng patch on
-        libpngPinned = pkgsU.libpng;
+        # vcpkg 1.6.59; pinned unstable has 1.6.58. nixpkgs libpng has the apng patch on
+        libpngPinned = pkgsU.libpng.overrideAttrs (_: {
+          version = "1.6.59";
+          src = pkgsU.fetchurl {
+            url  = "mirror://sourceforge/libpng/libpng-1.6.59.tar.xz";
+            hash = "sha256-2A3So4o3+APLm2rHsUvW503cO2VHgKg4C9+TUj/bQ4k=";
+          };
+        });
 
         zlibPinned = pkgs.zlib;
 
@@ -178,16 +202,25 @@
 
         freetypePinned = pkgs.freetype;
 
-        # vcpkg 3.4.18, unstable has it
+        # vcpkg 3.4.18; pinned unstable has 3.4.16
         # vcpkg leaves libusb off; its event thread breaks WebContent's landlock check
         # SDL's suite checks haptic init, which needs libusb; Ladybird never uses it
-        sdl3Pinned = (pkgsU.sdl3.override { libusbSupport = false; }).overrideAttrs { doCheck = false; };
+        sdl3Pinned = (pkgsU.sdl3.override { libusbSupport = false; }).overrideAttrs (_: {
+          version = "3.4.18";
+          src = pkgsU.fetchFromGitHub {
+            owner = "libsdl-org";
+            repo  = "SDL";
+            tag   = "release-3.4.18";
+            hash  = "sha256-3dP4FJ5OvZI6UPykJpE3hTH6kdW+Nn7gUSf3yiPCobo=";
+          };
+          doCheck = false;
+        });
 
         # vcpkg 1.4.2
         libavifPinned = pkgsU.libavif.override { dav1d = dav1dPinned; };
 
         # vcpkg 8.23.0 (drift #9), nixpkgs has 8.22.0
-        curlPinned = (pkgsU.curl.override { websocketSupport = true; }).overrideAttrs (_: rec {
+        curlPinned = (pkgsU.curl.override { websocketSupport = true; openssl = opensslPinned; }).overrideAttrs (_: rec {
           version = "8.23.0";
           src = pkgsU.fetchurl {
             urls = [
@@ -204,7 +237,16 @@
         cpptracePinned = pkgsU.cpptrace;
 
         # these match the vcpkg pin exactly
-        fastFloatPinned = pkgsU.fast-float;                 # 8.3.2
+        # vcpkg 8.3.1; pinned unstable has 8.3.0
+        fastFloatPinned = pkgsU.fast-float.overrideAttrs (_: rec {
+          version = "8.3.1";
+          src = pkgsU.fetchFromGitHub {
+            owner = "fastfloat";
+            repo  = "fast_float";
+            rev   = "v${version}";
+            hash  = "sha256-cVDWNRaVSFLhl3wy9psLSCY/UwmuTm3QDS6l1se1Mjg=";
+          };
+        });
         # vulkan header/loader/mesa must stay from one nixpkgs, else vkCreateInstance
         # gives -9 (INCOMPATIBLE_DRIVER); keep the whole stack on stable
         vmaPinned = pkgs.vulkan-memory-allocator;           # 3.3.0
