@@ -43,6 +43,11 @@
 
         llvm = pkgs.llvmPackages_21;
 
+        # ld.lld from the lld package is unwrapped, so nothing adds the pkg-config -L
+        # store paths to RUNPATH and the binaries end up with no store path at all.
+        # llvm.bintools ships a wrapped ld.lld; clang finds it via -B, not PATH.
+        llvmClang = llvm.clang.override { bintools = llvm.bintools; };
+
         mimalloc227 = pkgs.mimalloc.overrideAttrs (_: rec {
           version = "2.2.7";
           src = pkgs.fetchFromGitHub {
@@ -322,7 +327,7 @@
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvm.clang llvm.lld lbenv ]
+            ++ [ llvmClang lbenv ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fontconfig.dev expat.dev
@@ -339,8 +344,8 @@
             ]);
 
           shellHook = ''
-            export CC=${llvm.clang}/bin/clang
-            export CXX=${llvm.clang}/bin/clang++
+            export CC=${llvmClang}/bin/clang
+            export CXX=${llvmClang}/bin/clang++
             export CMAKE_BUILD_TYPE=Release
             export CMAKE_PREFIX_PATH="${cmakePrefixPath}''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
             export ICU_ROOT=${pkgs.icu78.dev}
