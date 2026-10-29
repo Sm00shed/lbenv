@@ -55,12 +55,14 @@ flake_rev() {
 
 wt_root()  { echo "${LBENV_WT:-$HOME/lbenv-wt}"; }
 main_src() { echo "${LADYBIRD_SRC:-$HOME/ladybird}"; }
-
 # worktree for a ladybird rev, one dir per hash; prints its path.
-# $2 optional branch name: create/checkout that branch instead of detaching.
+# $2 optional branch name, else a stable lbenv/<sha8> one.
 ensure_worktree() {
-  local lh="$1" branch="${2:-}" src dir have want
+  local lh="$1" branch="${2:-}" src dir
   src=$(main_src); dir="$(wt_root)/$lh"
+  # a detached worktree shows no branch name (prompts/tools render it empty);
+  # give each one a stable branch so there's always a name to display
+  [ -n "$branch" ] || branch="lbenv/${lh:0:8}"
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
   # clear worktrees removed by hand, else 'add' says already registered
@@ -73,24 +75,11 @@ ensure_worktree() {
       git -C "$src" cat-file -e "$lh^{commit}" 2>/dev/null \
         || { echo "cannot find ladybird commit $lh (fetch failed or unknown sha)" >&2; exit 1; }
     fi
-    if [ -n "$branch" ]; then
-      # reuse branch if it already exists, else create it at the target sha
-      if git -C "$src" show-ref --verify --quiet "refs/heads/$branch"; then
-        git -C "$src" worktree add --quiet "$dir" "$branch" >&2
-      else
-        git -C "$src" worktree add --quiet -b "$branch" "$dir" "$lh" >&2
-      fi
+    # reuse the branch if it already exists, else create it at the target sha
+    if git -C "$src" show-ref --verify --quiet "refs/heads/$branch"; then
+      git -C "$src" worktree add --quiet "$dir" "$branch" >&2
     else
-      git -C "$src" worktree add --quiet --detach "$dir" "$lh" >&2
-    fi
-  else
-    # reused detached worktree must sit on the requested commit
-    if [ -z "$branch" ]; then
-      have="$(git -C "$dir" rev-parse HEAD 2>/dev/null || true)"
-      want="$(git -C "$src" rev-parse "$lh^{commit}" 2>/dev/null || true)"
-      if [ -n "$have" ] && [ -n "$want" ] && [ "$have" != "$want" ]; then
-        echo "warning: worktree $dir is at ${have:0:8}, not ${lh:0:8}" >&2
-      fi
+      git -C "$src" worktree add --quiet -b "$branch" "$dir" "$lh" >&2
     fi
   fi
   echo "$dir"
@@ -114,7 +103,7 @@ write_envrc() {
 }
 
 override() {
-  local dir; dir=$(ensure_worktree "$1")   # detached, floating — no .envrc
+  local dir; dir=$(ensure_worktree "$1")   # floating, no .envrc
   export LBENV_FLAKE_REV="$(flake_rev)"
   export LBENV_LADYBIRD="$1" LBENV_TITLE="(not recorded)" LBENV_WHEN="" LBENV_VCPKG="-"
   cd "$dir" || exit 1
