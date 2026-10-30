@@ -307,7 +307,7 @@
 
         cmakePrefixPath = pkgs.lib.concatStringsSep ":" (map toString cmakePrefixParts);
 
-        # helper processes drop LD_LIBRARY_PATH (env allowlist); use as RPATH too
+        # lib dirs baked into the binaries' RPATH
         libraryPath = pkgs.lib.makeLibraryPath libPkgs;
 
         nixpkgsSrc = nixpkgs;
@@ -379,8 +379,6 @@
             unset VCPKG_ROOT
             unset CMAKE_TOOLCHAIN_FILE
 
-            # shell-wide: generated host tools link libstdc++ from stdenv at build time
-            export LD_LIBRARY_PATH="${libraryPath}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             # CMake reads LDFLAGS from env, not CMAKE_*_LINKER_FLAGS directly
             export LDFLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${LDFLAGS:+ $LDFLAGS}"
             # build dir inside the per-hash worktree
