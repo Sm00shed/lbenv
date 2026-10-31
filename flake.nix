@@ -348,8 +348,10 @@
 
           packages = libPkgs
             ++ [ llvmClang lbenv ladybirdCmd ]
+            # rust-toolchain.toml asks for 1.98, nixos-26.05 froze at 1.95
+            ++ (with pkgsU; [ cargo rustc ])
             ++ (with pkgs; [
-              cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
+              cmake ninja pkg-config python3 perl ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fontconfig.dev expat.dev
               libavifPinned.dev opensslPinned.dev sdl3Pinned.dev simdutfPinned brotli.dev lcms2.dev
               zstd.dev libidn2.dev woff2.dev icu78.dev simdjsonPinned zmijPinned mimalloc227.dev
