@@ -31,8 +31,14 @@ toml_get() { sed -n "s/^$1[[:space:]]*=[[:space:]]*\"\(.*\)\"/\1/p" | sed 's/\\\
 
 # newest ladybird sha: live first, pinned input only as offline fallback
 db_latest() {
-  curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest" 2>/dev/null \
-    || cat "$DB_DIR/latest"
+  if live=$(curl -fsSL "https://raw.githubusercontent.com/$DB_REPO/main/latest" 2>/dev/null); then
+    printf %s "$live"
+  else
+    pinned=$(tr -d "[:space:]" < "$DB_DIR/latest")
+    echo "warning: $DB_REPO unreachable — using the pinned latest ${pinned:0:8}," >&2
+    echo "         which may be older than the newest recorded commit" >&2
+    printf %s "$pinned"
+  fi
 }
 
 # one commit's TOML to stdout: local input first, curl fallback
