@@ -57,6 +57,13 @@ Enter the shell — it opens an interactive subshell:
 nix develop github:Sm00shed/lbenv
 ```
 
+Or start `lbenv` directly, which picks the newest recorded version and lands
+you in its shell:
+
+```bash
+nix run github:Sm00shed/lbenv
+```
+
 Pick a version with `lbenv` (newest) or `lbenv switch <hash>`. That creates a
 git worktree for the chosen Ladybird commit under `~/lbenv-wt/<hash>/`, drops
 you into it, and exports `LADYBIRD_BUILD_DIR` (`Build` inside the worktree). Each
@@ -216,9 +223,11 @@ caches:
 
 - `ICU_ROOT` points at the ICU 78 development tree, matching the `-DICU_ROOT`
   CMake option.
-- `FONTCONFIG_FILE` points at a generated fontconfig file that exposes the
-  DejaVu and Liberation font packages, so text rendering works without any
-  host font configuration.
+- No fonts are provided. Ladybird uses the ones it ships in `Base/res/fonts`.
+  A generated `FONTCONFIG_FILE` in the store was tried and removed again: the
+  Landlock sandbox blocks the renderer from reading store paths, and fontconfig
+  initializes lazily during text layout, after the sandbox is applied, so the
+  file could never be read (upstream issue #11775).
 - The `Caches` directory is filled with the data files Ladybird would otherwise
   download: the Unicode Character Database (UCD, including emoji and IDNA
   tables), the HSTS preload list, the Public Suffix List, and the CA
