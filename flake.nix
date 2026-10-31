@@ -347,7 +347,7 @@
               libpngPinned.dev libxml2Pinned.dev sqlitePinned.dev zlibPinned.dev freetypePinned.dev
               unicode-character-database unicode-emoji unicode-idna publicsuffix-list
               cacert
-              patchelf glslang
+              patchelf glslang direnv
               libdrm.dev vulkanHeadersPinned vulkan-loader.dev
               libGL.dev libpulseaudio.dev glib.dev libsysprof-capture
               qt6Packages.qtmultimedia qt6Packages.qtpositioning qt6Packages.qtwayland
