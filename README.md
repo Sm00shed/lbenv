@@ -116,13 +116,36 @@ After the build, launch the browser from the shell:
 Ladybird
 ```
 
-`Ladybird` is a shell function that runs the browser from the selected version's
-`$LADYBIRD_BUILD_DIR` and passes the CA certificate automatically. Override it
-with an environment variable:
+`Ladybird` runs the browser from the selected version's `$LADYBIRD_BUILD_DIR`,
+passes the CA certificate automatically and gives each version its own profile.
+Override the certificate with an environment variable:
 
 ```bash
 LADYBIRD_CERTIFICATE=/path/to/cert.crt Ladybird
 ```
+
+### Renderer
+
+Three modes: `cpu` (no GPU, the default), `lavapipe` (software Vulkan) and
+`vulkan` (the mesa hardware driver, whichever one the machine has). The mode as
+first argument applies to that start only, which is the quick way to compare
+them:
+
+```bash
+Ladybird vulkan
+Ladybird lavapipe
+Ladybird cpu
+```
+
+`LB_RENDER` does the same from the environment. For a lasting default, stored
+per worktree in `.lbenv.conf`:
+
+```bash
+Ladybird --default vulkan
+```
+
+The Vulkan ICD reaches the helper processes through `XDG_DATA_DIRS`, since they
+keep only allowlisted variables and `VK_*` never arrives there.
 
 ## Source version management
 

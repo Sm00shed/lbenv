@@ -322,6 +322,16 @@
             (builtins.readFile ./scripts/lbenv.sh)
         );
 
+        # Ladybird is an own binary, not a shellHook function: the renderer default
+        # lives in .lbenv.conf and is read at every start, so nothing has to be
+        # exported back into the calling shell.
+        ladybirdCmd = pkgs.writeShellScriptBin "Ladybird" (
+          builtins.replaceStrings
+            [ "@BINPATH@" "@LAVAPIPE_ICD@" "@HW_ICD@" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ coreutils gnugrep gnused ])}" "${lavapipeIcdShare}" "${hwIcdShare}" ]
+            (builtins.readFile ./scripts/ladybird.sh)
+        );
+
       in {
         # `nix run github:Sm00shed/lbenv` starts lbenv directly (banner -> shell),
         # no interactive nix-develop bash in between
@@ -337,7 +347,7 @@
           NIX_ENFORCE_NO_NATIVE = "0";
 
           packages = libPkgs
-            ++ [ llvmClang lbenv ]
+            ++ [ llvmClang lbenv ladybirdCmd ]
             ++ (with pkgs; [
               cmake ninja pkg-config python3 perl cargo rustc ccache git coreutils
               curlPinned.dev fastFloatPinned ffmpegPinned.dev fontconfig.dev expat.dev
@@ -364,7 +374,7 @@
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
             _sel=0; [ -n "''${LBENV_FLAKE_REV:-}" ] && _sel=1
 
-            LADYBIRD_SRC_DIR="$PWD"
+            export LADYBIRD_SRC_DIR="$PWD"
             # CA cert only exists in a ladybird worktree; export only when created
             if [ -f "$PWD/Meta/CMake/check_for_dependencies.cmake" ]; then
               mkdir -p "$PWD/Caches/CACERT"
@@ -383,49 +393,6 @@
             export LDFLAGS="-lGL -lfontconfig -Wl,-rpath,${libraryPath}''${LDFLAGS:+ $LDFLAGS}"
             # build dir inside the per-hash worktree
             export LADYBIRD_BUILD_DIR="Build"
-            # renderer cpu | lavapipe (SW) | vulkan (HW); default in .lbenv.conf,
-            # overridable via LB_RENDER or Ladybird <mode>
-            _lb_conf="$LADYBIRD_SRC_DIR/.lbenv.conf"
-            _lb_render_default=cpu
-            [ -f "$_lb_conf" ] && _lb_render_default=$(sed -n 's/^render[[:space:]]*=[[:space:]]*//p' "$_lb_conf" | tail -n1)
-            export LB_RENDER="''${LB_RENDER:-''${_lb_render_default:-cpu}}"
-            _lb_xdg_data_dirs_orig="''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-            _lb_render_env() {
-              unset VK_DRIVER_FILES VK_ICD_FILENAMES
-              LB_RENDER_ARGS=()
-              local share=""
-              export XDG_DATA_DIRS="$_lb_xdg_data_dirs_orig"
-              case "$1" in
-                lavapipe) share="${lavapipeIcdShare}" ;;
-                vulkan)   share="${hwIcdShare}" ;;
-                nvidia)
-                  echo "render nvidia: placeholder — proprietary NVIDIA needs nixVulkanNvidia (impure), not implemented" >&2
-                  return 1 ;;
-                # the Compositor skips GPU init entirely here, so it needs no ICD
-                cpu) LB_RENDER_ARGS=(--force-cpu-painting) ;;
-                *) echo "render: unknown mode '$1' (vulkan|nvidia|lavapipe|cpu)" >&2; return 1 ;;
-              esac
-              # helper processes keep only allowlisted vars, so VK_* never arrives there
-              [ -n "$share" ] && export XDG_DATA_DIRS="$share/share:$_lb_xdg_data_dirs_orig"
-              return 0
-            }
-            render() {   # set the persistent default in .lbenv.conf
-              _lb_render_env "$1" || return 1
-              export LB_RENDER="$1"
-              { grep -v '^render[[:space:]]*=' "$_lb_conf" 2>/dev/null; echo "render = $1"; } \
-                > "$_lb_conf.tmp" && mv "$_lb_conf.tmp" "$_lb_conf"
-              echo "default renderer: $1"
-            }
-            Ladybird() {
-              local mode="$LB_RENDER"
-              case "''${1:-}" in vulkan|nvidia|lavapipe|cpu) mode="$1"; shift ;; esac
-              _lb_render_env "$mode" || return 1
-              local args=("''${LB_RENDER_ARGS[@]}")
-              [ -f "''${LADYBIRD_CERTIFICATE:-}" ] && args+=(--certificate="$LADYBIRD_CERTIFICATE")
-              # own runtime socket per version, else a new build attaches to a running old one
-              args+=(--profile-path "$LADYBIRD_SRC_DIR/.lbenv/profile")
-              "$LADYBIRD_SRC_DIR/$LADYBIRD_BUILD_DIR/bin/Ladybird" "''${args[@]}" "$@"
-            }
 
             ulimit -s unlimited
             export RUST_MIN_STACK=16777216
