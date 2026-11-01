@@ -317,8 +317,8 @@
         # @BINPATH@ and @DB_DIR@ are substituted in at build time.
         lbenv = pkgs.writeShellScriptBin "lbenv" (
           builtins.replaceStrings
-            [ "@BINPATH@" "@DB_DIR@" ]
-            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils gnugrep gnused ])}" "${lbdb}" ]
+            [ "@BINPATH@" "@DB_DIR@" "@PATCH_DIR@" ]
+            [ "${pkgs.lib.makeBinPath (with pkgs; [ curl git coreutils gnugrep gnused ])}" "${lbdb}" "${./patches}" ]
             (builtins.readFile ./scripts/lbenv.sh)
         );
 

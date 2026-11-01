@@ -1,0 +1,48 @@
+--- a/Libraries/LibSandbox/GpuDriverPaths.cpp
++++ b/Libraries/LibSandbox/GpuDriverPaths.cpp
+@@ -16,6 +16,8 @@
+ #include <LibCore/System.h>
+ #include <LibSandbox/Sandbox.h>
+ 
++#include <dlfcn.h>
++
+ namespace Sandbox {
+ 
+ // A driver or layer manifest names the library that the loader opens. A bare name is found by the dynamic loader in
+@@ -35,7 +37,14 @@
+         if (!library_path.has_value() || !library_path->contains('/'))
+             return {};
+         auto path = LexicalPath::absolute_path(LexicalPath::dirname(manifest_path), *library_path);
+-        return add_landlock_path_if_exists(paths, path, LandlockPath::Access::ReadOnly);
++        TRY(add_landlock_path_if_exists(paths, path, LandlockPath::Access::ReadOnly));
++        // Map the library now, while the filesystem is still open. The loader opens it once Landlock is in place, and
++        // it pulls in its own dependencies from wherever it was linked against. On a distribution that is /usr/lib,
++        // which we allow anyway, but a driver from a package store keeps every dependency in a directory of its own.
++        // Mapping it here lets add_loaded_library_directories() allow those directories as well. A failure is not
++        // interesting, the loader reports it when it tries the manifest for real.
++        (void)dlopen(path.characters(), RTLD_LAZY | RTLD_LOCAL);
++        return {};
+     };
+ 
+     auto const& object = manifest.value().as_object();
+@@ -130,9 +139,6 @@
+     TRY(add_landlock_path_if_exists(paths, "/lib64"sv, LandlockPath::Access::ReadOnly));
+     TRY(add_landlock_path_if_exists(paths, "/usr/lib"sv, LandlockPath::Access::ReadOnly));
+     TRY(add_landlock_path_if_exists(paths, "/usr/local/lib"sv, LandlockPath::Access::ReadOnly));
+-    // The driver loads more libraries after Landlock is in place, and they must come from where the libraries that we
+-    // already use came from. Otherwise the dynamic loader skips to another copy, such as the system's instead of our own.
+-    TRY(add_loaded_library_directories(paths));
+     // cpptrace opens loaded ELF objects when symbolizing in-process stack traces, and drivers read it too.
+     TRY(add_landlock_path_if_exists(paths, TRY(Core::System::current_executable_path()), LandlockPath::Access::ReadOnly));
+     TRY(add_landlock_path_if_exists(paths, "/etc/glvnd"sv, LandlockPath::Access::ReadOnly));
+@@ -147,6 +153,10 @@
+     TRY(add_landlock_path_if_exists(paths, "/etc/egl"sv, LandlockPath::Access::ReadOnly));
+     TRY(add_landlock_path_if_exists(paths, "/usr/share/egl"sv, LandlockPath::Access::ReadOnly));
+     TRY(add_loader_manifest_paths(paths));
++    // The driver loads more libraries after Landlock is in place, and they must come from where the libraries that we
++    // already use came from. Otherwise the dynamic loader skips to another copy, such as the system's instead of our own.
++    // This runs after the manifests, so that it also covers what they just mapped.
++    TRY(add_loaded_library_directories(paths));
+ 
+     // NB: GPU drivers read these while they set up and while they run. They used to do the setup before Landlock was in
+     //     place, and in threads that it never confined.

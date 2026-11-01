@@ -14,6 +14,7 @@ REPO="LadybirdBrowser/ladybird"
 FLAKE_REPO="Sm00shed/lbenv"
 DB_REPO="Sm00shed/lbdb"
 DB_DIR="@DB_DIR@"   # flake input checkout, always present (offline)
+PATCH_DIR="@PATCH_DIR@"   # our patches, applied when a worktree is created
 
 # opt-in local flake via LADYBIRD_FLAKE_DIR; verify it's actually ours
 FLAKE_DIR="${LADYBIRD_FLAKE_DIR:-}"
@@ -64,7 +65,7 @@ main_src() { echo "${LADYBIRD_SRC:-$HOME/ladybird}"; }
 # worktree for a ladybird rev, one dir per hash; prints its path.
 # $2 optional branch name, else a stable lbenv/<sha8> one.
 ensure_worktree() {
-  local lh="$1" branch="${2:-}" src dir
+  local lh="$1" branch="${2:-}" src dir p
   src=$(main_src); dir="$(wt_root)/$lh"
   # a detached worktree shows no branch name (prompts/tools render it empty);
   # give each one a stable branch so there's always a name to display
@@ -87,6 +88,15 @@ ensure_worktree() {
     else
       git -C "$src" worktree add --quiet -b "$branch" "$dir" "$lh" >&2
     fi
+    # our patches on top, one commit each so git log shows them
+    for p in "$PATCH_DIR"/*.patch; do
+      [ -e "$p" ] || continue
+      git -C "$dir" apply --reverse --check "$p" 2>/dev/null && continue  # branch has it
+      git -C "$dir" apply --3way "$p" 2>/dev/null || { git -C "$dir" reset -q --hard
+        echo "patch no longer applies: ${p##*/}" >&2; exit 1; }
+      git -C "$dir" -c user.name=lbenv -c user.email=lbenv@localhost \
+        commit -qam "lbenv patch: ${p##*/}"
+    done
   fi
   echo "$dir"
 }

@@ -1,0 +1,11 @@
+diff -ur orig/Meta/CMake/compile_options.cmake new/Meta/CMake/compile_options.cmake
+--- a/Meta/CMake/compile_options.cmake	2026-11-01 13:21:36.186959676 +0100
++++ b/Meta/CMake/compile_options.cmake	2026-11-01 13:21:36.193298285 +0100
+@@ -232,7 +232,6 @@
+ endif()
+ 
+ if (APPLE)
+-    list(APPEND CMAKE_PREFIX_PATH /opt/homebrew)
+     add_cxx_link_options(LINKER:-dead_strip)
+ 
+     # The debug info of LTO code lives in the objects the linker generates, which it deletes after linking unless told
