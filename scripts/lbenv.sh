@@ -66,10 +66,10 @@ main_src() { echo "${LADYBIRD_SRC:-$HOME/ladybird}"; }
 # $2 optional branch name, else a stable lbenv/<sha8> one.
 ensure_worktree() {
   local lh="$1" branch="${2:-}" src dir p
-  src=$(main_src); dir="$(wt_root)/$lh"
+  src=$(main_src); dir="$(wt_root)/$lh${PATCHED:+-patched}"
   # a detached worktree shows no branch name (prompts/tools render it empty);
   # give each one a stable branch so there's always a name to display
-  [ -n "$branch" ] || branch="lbenv/${lh:0:8}"
+  [ -n "$branch" ] || branch="lbenv/${lh:0:8}${PATCHED:+-patched}"
   [ -d "$src/.git" ] || git clone --quiet "https://github.com/$REPO" "$src" >&2
   mkdir -p "$(wt_root)"
   # clear worktrees removed by hand, else 'add' says already registered
@@ -89,7 +89,7 @@ ensure_worktree() {
       git -C "$src" worktree add --quiet -b "$branch" "$dir" "$lh" >&2
     fi
     # our patches on top, one commit each so git log shows them
-    for p in "$PATCH_DIR"/*.patch; do
+    [ -n "$PATCHED" ] && for p in "$PATCH_DIR"/*.patch; do
       [ -e "$p" ] || continue
       git -C "$dir" apply --reverse --check "$p" 2>/dev/null && continue  # branch has it
       git -C "$dir" apply --3way "$p" 2>/dev/null || { git -C "$dir" reset -q --hard
@@ -167,6 +167,10 @@ freeze_sha() {
   fi
 }
 
+# "patched" as the last word applies patches/ in a worktree of its own
+PATCHED=""
+if [ "$#" -gt 0 ] && [ "${!#}" = patched ]; then PATCHED=1; set -- "${@:1:$#-1}"; fi
+
 case "${1:-}" in
   "")
     # newest recorded (lbdb `latest`)
@@ -181,7 +185,7 @@ case "${1:-}" in
     [ -n "$base" ] || { echo "lbdb: cannot read latest" >&2; exit 1; }
     # resolve the actual ladybird sha of `latest` for the branch name
     lh="$(db_toml "$base" | toml_get ladybird)"; lh="${lh:-$base}"
-    branch="lbenv-dev/${lh:0:8}"
+    branch="lbenv-dev/${lh:0:8}${PATCHED:+-patched}"
     echo "dev on ${lh:0:8} — branch $branch, inheriting recorded pin"
     # checkout = recorded sha (fresh branch there); pin inherited from same entry
     freeze_sha "$base" "$lh" "$branch"
@@ -224,6 +228,7 @@ case "${1:-}" in
     echo "  lbenv switch <hash>    pick a recorded version by sha (prefix ok)" >&2
     echo "  lbenv dev              develop on newest recorded (own branch, inherited pin)" >&2
     echo "  lbenv new [hash]       floating, unrecorded commit" >&2
+    echo "  … patched              add patches/ on top, in its own worktree" >&2
     exit 1
     ;;
 esac
